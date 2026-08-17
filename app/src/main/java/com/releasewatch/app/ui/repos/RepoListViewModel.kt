@@ -58,6 +58,15 @@ class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() 
         }
     }
 
+    fun removeRepo(repoRelease: RepoRelease) {
+        viewModelScope.launch {
+            repository.hideRepo(repoRelease.repo.fullName)
+            uiState = uiState.copy(
+                repos = uiState.repos.filterNot { it.repo.fullName == repoRelease.repo.fullName }
+            )
+        }
+    }
+
     fun authToken(): String? = repository.authToken()
 
     fun logout(onLoggedOut: () -> Unit) {

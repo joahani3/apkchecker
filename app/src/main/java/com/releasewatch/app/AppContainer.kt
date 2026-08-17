@@ -17,6 +17,7 @@ class AppContainer(context: Context) {
     val gitHubRepository = GitHubRepository(
         api = api,
         tokenStore = tokenStore,
-        dao = db.releaseStateDao()
+        dao = db.releaseStateDao(),
+        hiddenRepoDao = db.hiddenRepoDao()
     )
 }

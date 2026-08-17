@@ -7,7 +7,9 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -29,6 +33,7 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -48,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.releasewatch.app.data.download.ApkDownloader
@@ -70,6 +77,7 @@ fun RepoListScreen(
     val uiState = viewModel.uiState
 
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
+    var repoPendingRemoval by remember { mutableStateOf<RepoRelease?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -134,21 +142,45 @@ fun RepoListScreen(
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                             },
                             onDownloadApk = { asset -> requestDownload(asset) },
-                            onMarkComplete = { viewModel.markComplete(repoRelease) }
+                            onMarkComplete = { viewModel.markComplete(repoRelease) },
+                            onLongPressCheck = { repoPendingRemoval = repoRelease }
                         )
                     }
                 }
             }
         }
     }
+
+    repoPendingRemoval?.let { target ->
+        AlertDialog(
+            onDismissRequest = { repoPendingRemoval = null },
+            title = { Text("관리 목록에서 삭제") },
+            text = { Text("${target.repo.fullName}을(를) 관리 목록에서 삭제할까요?\nGitHub의 star/watch 상태는 유지되며, 다시 보려면 앱에서 재추가할 방법이 없으니 주의해주세요.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.removeRepo(target)
+                    repoPendingRemoval = null
+                }) {
+                    Text("삭제")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { repoPendingRemoval = null }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RepoCard(
     repoRelease: RepoRelease,
     onOpenRelease: () -> Unit,
     onDownloadApk: (GithubAsset) -> Unit,
-    onMarkComplete: () -> Unit
+    onMarkComplete: () -> Unit,
+    onLongPressCheck: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -231,7 +263,18 @@ private fun RepoCard(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
 
-                    IconButton(onClick = onMarkComplete, enabled = repoRelease.isNew) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .combinedClickable(
+                                onClick = { if (repoRelease.isNew) onMarkComplete() },
+                                onLongClick = onLongPressCheck,
+                                onClickLabel = if (repoRelease.isNew) "완료로 표시" else "완료됨",
+                                onLongClickLabel = "관리 목록에서 삭제"
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             imageVector = if (repoRelease.isNew) {
                                 Icons.Filled.RadioButtonUnchecked

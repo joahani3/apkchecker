@@ -5,10 +5,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ReleaseStateEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [ReleaseStateEntity::class, HiddenRepoEntity::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun releaseStateDao(): ReleaseStateDao
+
+    abstract fun hiddenRepoDao(): HiddenRepoDao
 
     companion object {
         @Volatile
@@ -20,7 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "release_watch.db"
-                ).build().also { instance = it }
+                )
+                    .fallbackToDestructiveMigration(true)
+                    .build().also { instance = it }
             }
         }
     }

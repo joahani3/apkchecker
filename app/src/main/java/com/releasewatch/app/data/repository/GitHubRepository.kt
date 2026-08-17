@@ -1,6 +1,8 @@
 package com.releasewatch.app.data.repository
 
 import com.releasewatch.app.data.auth.TokenStore
+import com.releasewatch.app.data.db.HiddenRepoDao
+import com.releasewatch.app.data.db.HiddenRepoEntity
 import com.releasewatch.app.data.db.ReleaseStateDao
 import com.releasewatch.app.data.db.ReleaseStateEntity
 import com.releasewatch.app.data.network.GitHubApi
@@ -13,7 +15,8 @@ import kotlinx.coroutines.coroutineScope
 class GitHubRepository(
     private val api: GitHubApi,
     private val tokenStore: TokenStore,
-    private val dao: ReleaseStateDao
+    private val dao: ReleaseStateDao,
+    private val hiddenRepoDao: HiddenRepoDao
 ) {
 
     fun isLoggedIn(): Boolean = tokenStore.getToken() != null
@@ -37,6 +40,7 @@ class GitHubRepository(
     suspend fun logout() {
         tokenStore.clear()
         dao.clearAll()
+        hiddenRepoDao.clearAll()
     }
 
     suspend fun markSeen(repoRelease: RepoRelease) {
@@ -44,11 +48,16 @@ class GitHubRepository(
         dao.upsert(ReleaseStateEntity(repoRelease.repo.fullName, release.id, release.tagName))
     }
 
+    suspend fun hideRepo(fullName: String) {
+        hiddenRepoDao.hide(HiddenRepoEntity(fullName))
+    }
+
     suspend fun refreshRepos(): Result<List<RepoRelease>> = runCatching {
         coroutineScope {
             val ownDeferred = async { safeFetch { api.getOwnRepos() } }
             val starredDeferred = async { safeFetch { api.getStarredRepos() } }
             val watchedDeferred = async { safeFetch { api.getWatchedRepos() } }
+            val hiddenDeferred = async { hiddenRepoDao.getAllFullNames().toSet() }
 
             val merged = linkedMapOf<String, Pair<GithubRepo, MutableSet<RepoSource>>>()
             fun merge(list: List<GithubRepo>, source: RepoSource) {
@@ -61,11 +70,15 @@ class GitHubRepository(
             merge(starredDeferred.await(), RepoSource.STARRED)
             merge(watchedDeferred.await(), RepoSource.WATCHED)
 
-            merged.values.map { (repo, sources) ->
-                async { buildRepoRelease(repo, sources) }
-            }.awaitAll()
+            val hidden = hiddenDeferred.await()
+            merged.values
+                .filter { (repo, _) -> repo.fullName !in hidden }
+                .map { (repo, sources) ->
+                    async { buildRepoRelease(repo, sources) }
+                }.awaitAll()
                 .sortedWith(
-                    compareByDescending<RepoRelease> { it.isNew }
+                    compareByDescending<RepoRelease> { it.release?.publishedAt ?: "" }
+                        .thenByDescending { it.isNew }
                         .thenBy { it.repo.fullName.lowercase() }
                 )
         }
