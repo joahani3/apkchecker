@@ -1,0 +1,69 @@
+package com.releasewatch.app.ui.repos
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.releasewatch.app.data.repository.GitHubRepository
+import com.releasewatch.app.data.repository.RepoRelease
+import kotlinx.coroutines.launch
+
+data class RepoListUiState(
+    val isLoading: Boolean = false,
+    val repos: List<RepoRelease> = emptyList(),
+    val username: String? = null,
+    val errorMessage: String? = null
+)
+
+class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() {
+
+    var uiState by mutableStateOf(RepoListUiState(username = repository.cachedUsername()))
+        private set
+
+    init {
+        refresh()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
+            repository.refreshRepos()
+                .onSuccess { list ->
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        repos = list,
+                        username = repository.cachedUsername()
+                    )
+                }
+                .onFailure {
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        errorMessage = "새로고침에 실패했습니다. 네트워크 연결을 확인해주세요."
+                    )
+                }
+        }
+    }
+
+    fun markComplete(repoRelease: RepoRelease) {
+        if (!repoRelease.isNew) return
+        viewModelScope.launch {
+            repository.markSeen(repoRelease)
+            uiState = uiState.copy(
+                repos = uiState.repos.map {
+                    if (it.repo.fullName == repoRelease.repo.fullName) it.copy(isNew = false) else it
+                }
+            )
+        }
+    }
+
+    fun authToken(): String? = repository.authToken()
+
+    fun logout(onLoggedOut: () -> Unit) {
+        viewModelScope.launch {
+            repository.logout()
+            onLoggedOut()
+        }
+    }
+}
