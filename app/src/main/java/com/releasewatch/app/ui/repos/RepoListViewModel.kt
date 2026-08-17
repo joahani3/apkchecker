@@ -13,12 +13,18 @@ data class RepoListUiState(
     val isLoading: Boolean = false,
     val repos: List<RepoRelease> = emptyList(),
     val username: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val scopeWarning: String? = null
 )
 
 class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() {
 
-    var uiState by mutableStateOf(RepoListUiState(username = repository.cachedUsername()))
+    var uiState by mutableStateOf(
+        RepoListUiState(
+            username = repository.cachedUsername(),
+            scopeWarning = repository.scopeWarning()
+        )
+    )
         private set
 
     init {
@@ -65,6 +71,10 @@ class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() 
                 repos = uiState.repos.filterNot { it.repo.fullName == repoRelease.repo.fullName }
             )
         }
+    }
+
+    fun dismissScopeWarning() {
+        uiState = uiState.copy(scopeWarning = null)
     }
 
     fun authToken(): String? = repository.authToken()

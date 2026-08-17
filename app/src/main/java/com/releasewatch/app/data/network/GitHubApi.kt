@@ -11,7 +11,7 @@ import retrofit2.http.Query
 interface GitHubApi {
 
     @GET("user")
-    suspend fun getAuthenticatedUser(): GithubUser
+    suspend fun getAuthenticatedUser(): Response<GithubUser>
 
     @GET("user/repos")
     suspend fun getOwnRepos(

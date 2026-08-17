@@ -33,6 +33,12 @@ class TokenStore(context: Context) {
 
     fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
 
+    fun saveScopeWarning(warning: String?) {
+        prefs.edit().putString(KEY_SCOPE_WARNING, warning).apply()
+    }
+
+    fun getScopeWarning(): String? = prefs.getString(KEY_SCOPE_WARNING, null)
+
     fun clear() {
         prefs.edit().clear().apply()
     }
@@ -40,5 +46,6 @@ class TokenStore(context: Context) {
     companion object {
         private const val KEY_TOKEN = "pat_token"
         private const val KEY_USERNAME = "username"
+        private const val KEY_SCOPE_WARNING = "scope_warning"
     }
 }

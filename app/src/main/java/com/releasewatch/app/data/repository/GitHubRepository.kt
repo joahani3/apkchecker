@@ -25,15 +25,32 @@ class GitHubRepository(
 
     fun authToken(): String? = tokenStore.getToken()
 
+    fun scopeWarning(): String? = tokenStore.getScopeWarning()
+
     suspend fun login(token: String): Result<String> = runCatching {
         tokenStore.saveToken(token.trim())
         try {
-            val user = api.getAuthenticatedUser()
+            val response = api.getAuthenticatedUser()
+            val user = if (response.isSuccessful) response.body() else null
+            requireNotNull(user) { "GitHub 인증에 실패했습니다 (HTTP ${response.code()})" }
+
             tokenStore.saveUsername(user.login)
+            tokenStore.saveScopeWarning(scopeWarningFrom(response.headers()["X-OAuth-Scopes"]))
             user.login
         } catch (e: Exception) {
             tokenStore.clear()
             throw e
+        }
+    }
+
+    private fun scopeWarningFrom(scopesHeader: String?): String? {
+        // Fine-grained tokens don't send this header at all, so only classic tokens are checked here.
+        val scopes = scopesHeader?.split(",")?.map { it.trim() } ?: return null
+        return if ("repo" !in scopes) {
+            "이 토큰에는 'repo' 권한이 없어 private 저장소의 릴리즈가 보이지 않을 수 있습니다. " +
+                "설정에서 'repo' 권한을 포함한 토큰을 새로 발급해주세요."
+        } else {
+            null
         }
     }
 

@@ -28,14 +28,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -117,34 +120,38 @@ fun RepoListScreen(
             )
         }
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = uiState.isLoading,
-            onRefresh = { viewModel.refresh() },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            if (uiState.errorMessage != null && uiState.repos.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(uiState.errorMessage)
-                }
-            } else if (!uiState.isLoading && uiState.repos.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("감시할 저장소가 없습니다.")
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(uiState.repos, key = { it.repo.fullName }) { repoRelease ->
-                        RepoCard(
-                            repoRelease = repoRelease,
-                            onOpenRelease = {
-                                val url = repoRelease.release?.htmlUrl ?: repoRelease.repo.htmlUrl
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                            },
-                            onDownloadApk = { asset -> requestDownload(asset) },
-                            onMarkComplete = { viewModel.markComplete(repoRelease) },
-                            onLongPressCheck = { repoPendingRemoval = repoRelease }
-                        )
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            uiState.scopeWarning?.let { warning ->
+                ScopeWarningBanner(message = warning, onDismiss = { viewModel.dismissScopeWarning() })
+            }
+
+            PullToRefreshBox(
+                isRefreshing = uiState.isLoading,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (uiState.errorMessage != null && uiState.repos.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(uiState.errorMessage)
+                    }
+                } else if (!uiState.isLoading && uiState.repos.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("감시할 저장소가 없습니다.")
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(uiState.repos, key = { it.repo.fullName }) { repoRelease ->
+                            RepoCard(
+                                repoRelease = repoRelease,
+                                onOpenRelease = {
+                                    val url = repoRelease.release?.htmlUrl ?: repoRelease.repo.htmlUrl
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                },
+                                onDownloadApk = { asset -> requestDownload(asset) },
+                                onMarkComplete = { viewModel.markComplete(repoRelease) },
+                                onLongPressCheck = { repoPendingRemoval = repoRelease }
+                            )
+                        }
                     }
                 }
             }
@@ -290,6 +297,41 @@ private fun RepoCard(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScopeWarningBanner(message: String, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Filled.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "닫기",
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
             }
         }
     }
