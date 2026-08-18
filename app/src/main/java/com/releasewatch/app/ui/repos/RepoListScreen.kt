@@ -54,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +70,7 @@ import com.releasewatch.app.ui.viewModelFactory
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +79,7 @@ fun RepoListScreen(
 ) {
     val viewModel: RepoListViewModel = viewModelFactory { RepoListViewModel(it.gitHubRepository) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val uiState = viewModel.uiState
 
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
@@ -86,7 +89,9 @@ fun RepoListScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            pendingDownload?.let { ApkDownloader.download(context, it, viewModel.authToken()) }
+            pendingDownload?.let { asset ->
+                coroutineScope.launch { ApkDownloader.download(context, asset, viewModel.authToken()) }
+            }
         }
         pendingDownload = null
     }
@@ -99,7 +104,7 @@ fun RepoListScreen(
             pendingDownload = asset
             permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
-            ApkDownloader.download(context, asset, viewModel.authToken())
+            coroutineScope.launch { ApkDownloader.download(context, asset, viewModel.authToken()) }
         }
     }
 
