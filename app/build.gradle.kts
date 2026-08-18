@@ -17,6 +17,19 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        // Checked into the repo so every machine (including CI, which otherwise gets a
+        // fresh auto-generated debug.keystore on each ephemeral runner) signs debug builds
+        // with the same key. Without this, each CI-built APK has a different signature and
+        // installing a new build fails unless the previous one is uninstalled first.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
