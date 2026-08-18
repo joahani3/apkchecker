@@ -11,13 +11,13 @@ object GithubAssetFetcher {
 
     private val httpClient = OkHttpClient()
 
-    // browser_download_url redirects to a pre-signed S3 URL. Replaying the Authorization
-    // header on the redirected request makes S3 reject the pre-signed URL, so the redirect
-    // is resolved here and callers only ever see the final, self-authenticating URL.
-    suspend fun resolveFinalUrl(url: String, token: String?): String = withContext(Dispatchers.IO) {
+    // The asset's API url redirects to a pre-signed, time-limited blob storage URL. Replaying
+    // the Authorization header on that redirected request makes the signed URL's host reject
+    // it, so the redirect is resolved here and callers only ever see the final URL.
+    suspend fun resolveFinalUrl(asset: GithubAsset, token: String?): String = withContext(Dispatchers.IO) {
         try {
             val requestBuilder = Request.Builder()
-                .url(url)
+                .url(asset.apiUrl)
                 .header("Accept", "application/octet-stream")
             token?.let { requestBuilder.header("Authorization", "Bearer $it") }
 
@@ -25,14 +25,14 @@ object GithubAssetFetcher {
                 response.request.url.toString()
             }
         } catch (e: Exception) {
-            url
+            asset.apiUrl
         }
     }
 
     suspend fun downloadToFile(asset: GithubAsset, token: String?, destination: File): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                val resolvedUrl = resolveFinalUrl(asset.browserDownloadUrl, token)
+                val resolvedUrl = resolveFinalUrl(asset, token)
                 val request = Request.Builder().url(resolvedUrl).build()
                 httpClient.newCall(request).execute().use { response ->
                     val body = response.body

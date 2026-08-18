@@ -41,7 +41,9 @@ data class GithubRelease(
 data class GithubAsset(
     val id: Long,
     val name: String,
-    @Json(name = "browser_download_url") val browserDownloadUrl: String,
+    // The API asset endpoint, not browser_download_url: that one needs a browser session
+    // cookie and returns 404 for a private repo's assets even with a valid Authorization header.
+    @Json(name = "url") val apiUrl: String,
     @Json(name = "content_type") val contentType: String? = null
 )
 

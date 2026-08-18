@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 object ApkDownloader {
 
     suspend fun download(context: Context, asset: GithubAsset, token: String?) {
-        val resolvedUrl = GithubAssetFetcher.resolveFinalUrl(asset.browserDownloadUrl, token)
+        val resolvedUrl = GithubAssetFetcher.resolveFinalUrl(asset, token)
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
         // Every release's APK asset is named "app-debug.apk" (see release-apk.yml), so without
