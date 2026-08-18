@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.releasewatch.app.data.download.ApkDownloader
+import com.releasewatch.app.data.install.InstalledAppChecker
 import com.releasewatch.app.data.network.model.GithubAsset
 import com.releasewatch.app.data.network.model.apkAsset
 import com.releasewatch.app.data.repository.InstallStatus
@@ -84,6 +85,10 @@ fun RepoListScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val uiState = viewModel.uiState
+
+    val appVersionName = remember {
+        InstalledAppChecker.getInstalledPackageInfo(context, context.packageName)?.versionName
+    }
 
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
     var repoPendingRemoval by remember { mutableStateOf<RepoRelease?>(null) }
@@ -118,6 +123,14 @@ fun RepoListScreen(
                     Text(uiState.username?.let { "$it 님의 저장소" } ?: "ReleaseWatch")
                 },
                 actions = {
+                    appVersionName?.let { version ->
+                        Text(
+                            text = "v$version",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = "새로고침")
                     }
