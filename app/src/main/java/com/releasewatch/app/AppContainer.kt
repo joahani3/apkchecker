@@ -8,6 +8,8 @@ import com.releasewatch.app.data.repository.GitHubRepository
 
 class AppContainer(context: Context) {
 
+    private val appContext = context.applicationContext
+
     val tokenStore = TokenStore(context)
 
     private val api = NetworkModule.createApi(tokenStore)
@@ -15,9 +17,11 @@ class AppContainer(context: Context) {
     private val db = AppDatabase.getInstance(context)
 
     val gitHubRepository = GitHubRepository(
+        context = appContext,
         api = api,
         tokenStore = tokenStore,
         dao = db.releaseStateDao(),
-        hiddenRepoDao = db.hiddenRepoDao()
+        hiddenRepoDao = db.hiddenRepoDao(),
+        repoPackageDao = db.repoPackageDao()
     )
 }

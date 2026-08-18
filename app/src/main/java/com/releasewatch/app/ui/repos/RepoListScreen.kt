@@ -30,9 +30,11 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -64,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import com.releasewatch.app.data.download.ApkDownloader
 import com.releasewatch.app.data.network.model.GithubAsset
 import com.releasewatch.app.data.network.model.apkAsset
+import com.releasewatch.app.data.repository.InstallStatus
 import com.releasewatch.app.data.repository.RepoRelease
 import com.releasewatch.app.data.repository.RepoSource
 import com.releasewatch.app.ui.viewModelFactory
@@ -207,7 +210,21 @@ private fun RepoCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
+                when (repoRelease.installStatus) {
+                    InstallStatus.NOT_INSTALLED -> StatusChip(
+                        label = "미설치",
+                        icon = Icons.Filled.GetApp,
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                    InstallStatus.UPDATE_AVAILABLE -> StatusChip(
+                        label = "업데이트 필요",
+                        icon = Icons.Filled.Update,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                    else -> {}
+                }
                 if (repoRelease.isNew) {
+                    Spacer(modifier = Modifier.width(4.dp))
                     SuggestionChip(
                         onClick = {},
                         label = { Text("NEW") },
@@ -231,6 +248,13 @@ private fun RepoCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                repoRelease.installedVersionName?.let { installedVersion ->
+                    Text(
+                        text = "설치된 버전: $installedVersion",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 Text(
                     text = "릴리즈 없음",
@@ -340,6 +364,22 @@ private fun ScopeWarningBanner(message: String, onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun StatusChip(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    containerColor: androidx.compose.ui.graphics.Color
+) {
+    SuggestionChip(
+        onClick = {},
+        label = { Text(label) },
+        icon = {
+            Icon(icon, contentDescription = null, modifier = Modifier.width(16.dp))
+        },
+        colors = SuggestionChipDefaults.suggestionChipColors(containerColor = containerColor)
+    )
 }
 
 @Composable

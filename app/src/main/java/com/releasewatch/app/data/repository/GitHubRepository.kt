@@ -1,22 +1,32 @@
 package com.releasewatch.app.data.repository
 
+import android.content.Context
 import com.releasewatch.app.data.auth.TokenStore
 import com.releasewatch.app.data.db.HiddenRepoDao
 import com.releasewatch.app.data.db.HiddenRepoEntity
 import com.releasewatch.app.data.db.ReleaseStateDao
 import com.releasewatch.app.data.db.ReleaseStateEntity
+import com.releasewatch.app.data.db.RepoPackageDao
+import com.releasewatch.app.data.db.RepoPackageEntity
+import com.releasewatch.app.data.install.ApkPackageInspector
+import com.releasewatch.app.data.install.InstalledAppChecker
+import com.releasewatch.app.data.install.VersionTextComparator
 import com.releasewatch.app.data.network.GitHubApi
+import com.releasewatch.app.data.network.model.GithubAsset
 import com.releasewatch.app.data.network.model.GithubRelease
 import com.releasewatch.app.data.network.model.GithubRepo
+import com.releasewatch.app.data.network.model.apkAsset
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
 class GitHubRepository(
+    private val context: Context,
     private val api: GitHubApi,
     private val tokenStore: TokenStore,
     private val dao: ReleaseStateDao,
-    private val hiddenRepoDao: HiddenRepoDao
+    private val hiddenRepoDao: HiddenRepoDao,
+    private val repoPackageDao: RepoPackageDao
 ) {
 
     fun isLoggedIn(): Boolean = tokenStore.getToken() != null
@@ -94,11 +104,18 @@ class GitHubRepository(
                     async { buildRepoRelease(repo, sources) }
                 }.awaitAll()
                 .sortedWith(
-                    compareByDescending<RepoRelease> { it.release?.publishedAt ?: "" }
+                    compareBy<RepoRelease> { installPriority(it.installStatus) }
+                        .thenByDescending { it.release?.publishedAt ?: "" }
                         .thenByDescending { it.isNew }
                         .thenBy { it.repo.fullName.lowercase() }
                 )
         }
+    }
+
+    private fun installPriority(status: InstallStatus): Int = when (status) {
+        InstallStatus.NOT_INSTALLED -> 0
+        InstallStatus.UPDATE_AVAILABLE -> 1
+        InstallStatus.UP_TO_DATE, InstallStatus.UNKNOWN -> 2
     }
 
     private suspend fun buildRepoRelease(repo: GithubRepo, sources: Set<RepoSource>): RepoRelease {
@@ -114,7 +131,35 @@ class GitHubRepository(
             else -> state.lastSeenReleaseId != release.id
         }
 
-        return RepoRelease(repo, release, sources, isNew)
+        val (installStatus, installedVersionName) = resolveInstallStatus(repo, release)
+
+        return RepoRelease(repo, release, sources, isNew, installStatus, installedVersionName)
+    }
+
+    private suspend fun resolveInstallStatus(
+        repo: GithubRepo,
+        release: GithubRelease?
+    ): Pair<InstallStatus, String?> {
+        val apkAsset = release?.apkAsset ?: return InstallStatus.UNKNOWN to null
+        val packageName = resolvePackageName(repo.fullName, apkAsset) ?: return InstallStatus.UNKNOWN to null
+
+        val installed = InstalledAppChecker.getInstalledPackageInfo(context, packageName)
+            ?: return InstallStatus.NOT_INSTALLED to null
+
+        val status = when (VersionTextComparator.isOlder(installed.versionName, release.tagName)) {
+            true -> InstallStatus.UPDATE_AVAILABLE
+            false -> InstallStatus.UP_TO_DATE
+            null -> InstallStatus.UNKNOWN
+        }
+        return status to installed.versionName
+    }
+
+    private suspend fun resolvePackageName(repoFullName: String, asset: GithubAsset): String? {
+        repoPackageDao.getPackageName(repoFullName)?.let { return it }
+
+        val resolved = ApkPackageInspector.resolvePackageName(context, asset, tokenStore.getToken()) ?: return null
+        repoPackageDao.upsert(RepoPackageEntity(repoFullName, resolved))
+        return resolved
     }
 
     private suspend fun fetchLatestReleaseOrNull(owner: String, repoName: String): GithubRelease? {
