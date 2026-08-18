@@ -146,7 +146,12 @@ class GitHubRepository(
         val installed = InstalledAppChecker.getInstalledPackageInfo(context, packageName)
             ?: return InstallStatus.NOT_INSTALLED to null
 
-        val status = when (VersionTextComparator.isOlder(installed.versionName, release.tagName)) {
+        // Prefer the release's display name over its tag: tags are often build counters
+        // (e.g. "apk-8") unrelated to the app's own version number, while maintainers usually
+        // put the actual version in the release title (e.g. "apk v3.2").
+        val releaseVersionLabel = release.name?.takeIf { it.isNotBlank() } ?: release.tagName
+
+        val status = when (VersionTextComparator.isOlder(installed.versionName, releaseVersionLabel)) {
             true -> InstallStatus.UPDATE_AVAILABLE
             false -> InstallStatus.UP_TO_DATE
             null -> InstallStatus.UNKNOWN
