@@ -15,7 +15,8 @@ data class RepoListUiState(
     val repos: List<RepoRelease> = emptyList(),
     val username: String? = null,
     val errorMessage: String? = null,
-    val scopeWarning: String? = null
+    val scopeWarning: String? = null,
+    val hiddenRepos: List<String> = emptyList()
 )
 
 class RepoListViewModel(
@@ -62,6 +63,20 @@ class RepoListViewModel(
             uiState = uiState.copy(
                 repos = uiState.repos.filterNot { it.repo.fullName == repoRelease.repo.fullName }
             )
+        }
+    }
+
+    fun loadHiddenRepos() {
+        viewModelScope.launch {
+            uiState = uiState.copy(hiddenRepos = repository.getHiddenRepos())
+        }
+    }
+
+    fun unhideRepo(fullName: String) {
+        viewModelScope.launch {
+            repository.unhideRepo(fullName)
+            uiState = uiState.copy(hiddenRepos = uiState.hiddenRepos - fullName)
+            refresh()
         }
     }
 

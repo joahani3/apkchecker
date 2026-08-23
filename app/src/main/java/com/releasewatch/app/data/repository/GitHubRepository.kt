@@ -73,6 +73,12 @@ class GitHubRepository(
         hiddenRepoDao.hide(HiddenRepoEntity(fullName))
     }
 
+    suspend fun getHiddenRepos(): List<String> = hiddenRepoDao.getAllFullNames()
+
+    suspend fun unhideRepo(fullName: String) {
+        hiddenRepoDao.unhide(fullName)
+    }
+
     suspend fun refreshRepos(): Result<List<RepoRelease>> = runCatching {
         coroutineScope {
             val ownDeferred = async { safeFetch { api.getOwnRepos() } }

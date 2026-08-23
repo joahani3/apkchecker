@@ -14,6 +14,9 @@ interface HiddenRepoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun hide(entity: HiddenRepoEntity)
 
+    @Query("DELETE FROM hidden_repo WHERE repoFullName = :repoFullName")
+    suspend fun unhide(repoFullName: String)
+
     @Query("DELETE FROM hidden_repo")
     suspend fun clearAll()
 }

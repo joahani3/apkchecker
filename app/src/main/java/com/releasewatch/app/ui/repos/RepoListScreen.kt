@@ -18,28 +18,35 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GetApp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,6 +102,8 @@ fun RepoListScreen(
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
     var repoPendingRemoval by remember { mutableStateOf<RepoRelease?>(null) }
     var pendingInstallId by remember { mutableStateOf<Long?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showHiddenRepos by remember { mutableStateOf(false) }
     var wasLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLoading) {
@@ -187,14 +196,43 @@ fun RepoListScreen(
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = "새로고침")
                     }
-                    IconButton(onClick = { backupLauncher.launch("releasewatch_backup.txt") }) {
-                        Icon(Icons.Filled.Save, contentDescription = "백업")
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
                     }
-                    IconButton(onClick = { restoreLauncher.launch(arrayOf("text/plain")) }) {
-                        Icon(Icons.Filled.Restore, contentDescription = "복구")
-                    }
-                    IconButton(onClick = { viewModel.logout(onLoggedOut) }) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "로그아웃")
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("백업") },
+                            leadingIcon = { Icon(Icons.Filled.Save, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                backupLauncher.launch("releasewatch_backup.txt")
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("복구") },
+                            leadingIcon = { Icon(Icons.Filled.Restore, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                restoreLauncher.launch(arrayOf("text/plain"))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("숨긴 저장소 관리") },
+                            leadingIcon = { Icon(Icons.Filled.VisibilityOff, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                showHiddenRepos = true
+                                viewModel.loadHiddenRepos()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("로그아웃") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                viewModel.logout(onLoggedOut)
+                            }
+                        )
                     }
                 }
             )
@@ -241,7 +279,7 @@ fun RepoListScreen(
         AlertDialog(
             onDismissRequest = { repoPendingRemoval = null },
             title = { Text("관리 목록에서 삭제") },
-            text = { Text("${target.repo.fullName}을(를) 관리 목록에서 삭제할까요?\nGitHub의 star/watch 상태는 유지되며, 다시 보려면 앱에서 재추가할 방법이 없으니 주의해주세요.") },
+            text = { Text("${target.repo.fullName}을(를) 관리 목록에서 삭제할까요?\nGitHub의 star/watch 상태는 유지되며, 상단 메뉴의 '숨긴 저장소 관리'에서 다시 추가할 수 있습니다.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.removeRepo(target)
@@ -274,6 +312,42 @@ fun RepoListScreen(
             dismissButton = {
                 TextButton(onClick = { pendingInstallId = null }) {
                     Text("취소")
+                }
+            }
+        )
+    }
+
+    if (showHiddenRepos) {
+        AlertDialog(
+            onDismissRequest = { showHiddenRepos = false },
+            title = { Text("숨긴 저장소 관리") },
+            text = {
+                if (uiState.hiddenRepos.isEmpty()) {
+                    Text("숨긴 저장소가 없습니다.")
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        uiState.hiddenRepos.forEach { fullName ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(fullName, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { viewModel.unhideRepo(fullName) }) {
+                                    Text("복원")
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHiddenRepos = false }) {
+                    Text("닫기")
                 }
             }
         )
