@@ -14,7 +14,8 @@ import kotlinx.coroutines.withContext
 
 object ApkDownloader {
 
-    suspend fun download(context: Context, asset: GithubAsset, token: String?) {
+    /** Returns the completed download's id, or null if the download failed. */
+    suspend fun download(context: Context, asset: GithubAsset, token: String?): Long? {
         val resolvedUrl = GithubAssetFetcher.resolveFinalUrl(asset, token)
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
@@ -42,12 +43,13 @@ object ApkDownloader {
                 "다운로드 실패 (오류 코드 $failureReason: ${describeFailure(failureReason)})",
                 Toast.LENGTH_LONG
             ).show()
-        } else {
-            promptInstall(context, downloadManager, downloadId)
+            return null
         }
+        return downloadId
     }
 
-    private fun promptInstall(context: Context, downloadManager: DownloadManager, downloadId: Long) {
+    /** Launches the package installer for a completed download, prompting for the install-source permission first if needed. */
+    fun install(context: Context, downloadId: Long) {
         if (!context.packageManager.canRequestPackageInstalls()) {
             Toast.makeText(context, "설치를 위해 '알 수 없는 앱 설치' 권한을 허용해주세요", Toast.LENGTH_LONG).show()
             context.startActivity(
@@ -57,6 +59,7 @@ object ApkDownloader {
             return
         }
 
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return
         val mimeType = downloadManager.getMimeTypeForDownloadedFile(downloadId)
         context.startActivity(

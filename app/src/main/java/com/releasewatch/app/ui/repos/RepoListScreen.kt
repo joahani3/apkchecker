@@ -94,6 +94,7 @@ fun RepoListScreen(
 
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
     var repoPendingRemoval by remember { mutableStateOf<RepoRelease?>(null) }
+    var pendingInstallId by remember { mutableStateOf<Long?>(null) }
     var wasLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLoading) {
@@ -108,7 +109,9 @@ fun RepoListScreen(
     ) { granted ->
         if (granted) {
             pendingDownload?.let { asset ->
-                coroutineScope.launch { ApkDownloader.download(context, asset, viewModel.authToken()) }
+                coroutineScope.launch {
+                    ApkDownloader.download(context, asset, viewModel.authToken())?.let { pendingInstallId = it }
+                }
             }
         }
         pendingDownload = null
@@ -160,7 +163,9 @@ fun RepoListScreen(
             pendingDownload = asset
             permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
-            coroutineScope.launch { ApkDownloader.download(context, asset, viewModel.authToken()) }
+            coroutineScope.launch {
+                ApkDownloader.download(context, asset, viewModel.authToken())?.let { pendingInstallId = it }
+            }
         }
     }
 
@@ -247,6 +252,27 @@ fun RepoListScreen(
             },
             dismissButton = {
                 TextButton(onClick = { repoPendingRemoval = null }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    pendingInstallId?.let { downloadId ->
+        AlertDialog(
+            onDismissRequest = { pendingInstallId = null },
+            title = { Text("다운로드 완료") },
+            text = { Text("설치할까요?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    ApkDownloader.install(context, downloadId)
+                    pendingInstallId = null
+                }) {
+                    Text("설치")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingInstallId = null }) {
                     Text("취소")
                 }
             }
