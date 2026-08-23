@@ -15,7 +15,6 @@ data class RepoRelease(
     val repo: GithubRepo,
     val release: GithubRelease?,
     val sources: Set<RepoSource>,
-    val isNew: Boolean,
     val installStatus: InstallStatus = InstallStatus.UNKNOWN,
     val installedVersionName: String? = null
 )

@@ -5,7 +5,6 @@ import com.releasewatch.app.data.auth.TokenStore
 import com.releasewatch.app.data.db.HiddenRepoDao
 import com.releasewatch.app.data.db.HiddenRepoEntity
 import com.releasewatch.app.data.db.ReleaseStateDao
-import com.releasewatch.app.data.db.ReleaseStateEntity
 import com.releasewatch.app.data.db.RepoPackageDao
 import com.releasewatch.app.data.db.RepoPackageEntity
 import com.releasewatch.app.data.install.ApkPackageInspector
@@ -70,11 +69,6 @@ class GitHubRepository(
         hiddenRepoDao.clearAll()
     }
 
-    suspend fun markSeen(repoRelease: RepoRelease) {
-        val release = repoRelease.release ?: return
-        dao.upsert(ReleaseStateEntity(repoRelease.repo.fullName, release.id, release.tagName))
-    }
-
     suspend fun hideRepo(fullName: String) {
         hiddenRepoDao.hide(HiddenRepoEntity(fullName))
     }
@@ -106,7 +100,6 @@ class GitHubRepository(
                 .sortedWith(
                     compareBy<RepoRelease> { installPriority(it.installStatus) }
                         .thenByDescending { it.release?.publishedAt ?: "" }
-                        .thenByDescending { it.isNew }
                         .thenBy { it.repo.fullName.lowercase() }
                 )
         }
@@ -120,20 +113,9 @@ class GitHubRepository(
 
     private suspend fun buildRepoRelease(repo: GithubRepo, sources: Set<RepoSource>): RepoRelease {
         val release = fetchLatestReleaseOrNull(repo.owner.login, repo.name)
-        val state = dao.getByRepo(repo.fullName)
-
-        val isNew = when {
-            release == null -> false
-            state == null -> {
-                dao.upsert(ReleaseStateEntity(repo.fullName, release.id, release.tagName))
-                false
-            }
-            else -> state.lastSeenReleaseId != release.id
-        }
-
         val (installStatus, installedVersionName) = resolveInstallStatus(repo, release)
 
-        return RepoRelease(repo, release, sources, isNew, installStatus, installedVersionName)
+        return RepoRelease(repo, release, sources, installStatus, installedVersionName)
     }
 
     private suspend fun resolveInstallStatus(

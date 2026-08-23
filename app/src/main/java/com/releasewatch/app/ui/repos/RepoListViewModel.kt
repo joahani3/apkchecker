@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.releasewatch.app.data.backup.BackupManager
 import com.releasewatch.app.data.repository.GitHubRepository
 import com.releasewatch.app.data.repository.RepoRelease
 import kotlinx.coroutines.launch
@@ -17,7 +18,10 @@ data class RepoListUiState(
     val scopeWarning: String? = null
 )
 
-class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() {
+class RepoListViewModel(
+    private val repository: GitHubRepository,
+    private val backupManager: BackupManager
+) : ViewModel() {
 
     var uiState by mutableStateOf(
         RepoListUiState(
@@ -52,18 +56,6 @@ class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() 
         }
     }
 
-    fun markComplete(repoRelease: RepoRelease) {
-        if (!repoRelease.isNew) return
-        viewModelScope.launch {
-            repository.markSeen(repoRelease)
-            uiState = uiState.copy(
-                repos = uiState.repos.map {
-                    if (it.repo.fullName == repoRelease.repo.fullName) it.copy(isNew = false) else it
-                }
-            )
-        }
-    }
-
     fun removeRepo(repoRelease: RepoRelease) {
         viewModelScope.launch {
             repository.hideRepo(repoRelease.repo.fullName)
@@ -76,6 +68,11 @@ class RepoListViewModel(private val repository: GitHubRepository) : ViewModel() 
     fun dismissScopeWarning() {
         uiState = uiState.copy(scopeWarning = null)
     }
+
+    suspend fun createBackupText(): String = backupManager.createBackup()
+
+    suspend fun restoreBackup(text: String): Result<Unit> =
+        runCatching { backupManager.restoreBackup(text) }.onSuccess { refresh() }
 
     fun authToken(): String? = repository.authToken()
 

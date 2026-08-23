@@ -5,10 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,20 +19,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GetApp
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Visibility
@@ -60,7 +58,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.releasewatch.app.data.download.ApkDownloader
@@ -74,14 +71,16 @@ import com.releasewatch.app.ui.viewModelFactory
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepoListScreen(
     onLoggedOut: () -> Unit
 ) {
-    val viewModel: RepoListViewModel = viewModelFactory { RepoListViewModel(it.gitHubRepository) }
+    val viewModel: RepoListViewModel = viewModelFactory { RepoListViewModel(it.gitHubRepository, it.backupManager) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val uiState = viewModel.uiState
@@ -102,6 +101,44 @@ fun RepoListScreen(
             }
         }
         pendingDownload = null
+    }
+
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val text = viewModel.createBackupText()
+                val wrote = withContext(Dispatchers.IO) {
+                    runCatching {
+                        context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) }
+                    }.isSuccess
+                }
+                val message = if (wrote) "백업을 저장했습니다" else "백업 저장에 실패했습니다"
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val text = withContext(Dispatchers.IO) {
+                    runCatching {
+                        context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    }.getOrNull()
+                }
+                if (text == null) {
+                    Toast.makeText(context, "백업 파일을 읽을 수 없습니다", Toast.LENGTH_SHORT).show()
+                } else {
+                    viewModel.restoreBackup(text)
+                        .onSuccess { Toast.makeText(context, "복구했습니다", Toast.LENGTH_SHORT).show() }
+                        .onFailure { Toast.makeText(context, "복구 실패: 백업 파일 형식을 확인해주세요", Toast.LENGTH_LONG).show() }
+                }
+            }
+        }
     }
 
     fun requestDownload(asset: GithubAsset) {
@@ -133,6 +170,12 @@ fun RepoListScreen(
                     }
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = "새로고침")
+                    }
+                    IconButton(onClick = { backupLauncher.launch("releasewatch_backup.txt") }) {
+                        Icon(Icons.Filled.Save, contentDescription = "백업")
+                    }
+                    IconButton(onClick = { restoreLauncher.launch(arrayOf("text/plain")) }) {
+                        Icon(Icons.Filled.Restore, contentDescription = "복구")
                     }
                     IconButton(onClick = { viewModel.logout(onLoggedOut) }) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "로그아웃")
@@ -169,8 +212,7 @@ fun RepoListScreen(
                                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                 },
                                 onDownloadApk = { asset -> requestDownload(asset) },
-                                onMarkComplete = { viewModel.markComplete(repoRelease) },
-                                onLongPressCheck = { repoPendingRemoval = repoRelease }
+                                onLongPressRemove = { repoPendingRemoval = repoRelease }
                             )
                         }
                     }
@@ -207,14 +249,18 @@ private fun RepoCard(
     repoRelease: RepoRelease,
     onOpenRelease: () -> Unit,
     onDownloadApk: (GithubAsset) -> Unit,
-    onMarkComplete: () -> Unit,
-    onLongPressCheck: () -> Unit
+    onLongPressRemove: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable(onClick = onOpenRelease)
+            .combinedClickable(
+                onClick = onOpenRelease,
+                onLongClick = onLongPressRemove,
+                onClickLabel = "릴리즈 열기",
+                onLongClickLabel = "관리 목록에서 삭제"
+            )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,7 +271,7 @@ private fun RepoCard(
                 )
                 when (repoRelease.installStatus) {
                     InstallStatus.NOT_INSTALLED -> StatusChip(
-                        label = "미설치",
+                        label = "new",
                         icon = Icons.Filled.GetApp,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
@@ -235,16 +281,6 @@ private fun RepoCard(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     )
                     else -> {}
-                }
-                if (repoRelease.isNew) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    SuggestionChip(
-                        onClick = {},
-                        label = { Text("NEW") },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    )
                 }
             }
 
@@ -295,49 +331,19 @@ private fun RepoCard(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val apkAsset = release?.apkAsset
-                    if (apkAsset != null) {
-                        AssistChip(
-                            onClick = { onDownloadApk(apkAsset) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Filled.Download,
-                                    contentDescription = null,
-                                    modifier = Modifier.width(16.dp)
-                                )
-                            },
-                            label = { Text("APK") }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .combinedClickable(
-                                onClick = { if (repoRelease.isNew) onMarkComplete() },
-                                onLongClick = onLongPressCheck,
-                                onClickLabel = if (repoRelease.isNew) "완료로 표시" else "완료됨",
-                                onLongClickLabel = "관리 목록에서 삭제"
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (repoRelease.isNew) {
-                                Icons.Filled.RadioButtonUnchecked
-                            } else {
-                                Icons.Filled.CheckCircle
-                            },
-                            contentDescription = if (repoRelease.isNew) "완료로 표시" else "완료됨",
-                            tint = if (repoRelease.isNew) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
-                        )
-                    }
+                val apkAsset = release?.apkAsset
+                if (apkAsset != null) {
+                    AssistChip(
+                        onClick = { onDownloadApk(apkAsset) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Download,
+                                contentDescription = null,
+                                modifier = Modifier.width(16.dp)
+                            )
+                        },
+                        label = { Text("APK") }
+                    )
                 }
             }
         }
