@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -51,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,6 +86,7 @@ fun RepoListScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val uiState = viewModel.uiState
+    val listState = rememberLazyListState()
 
     val appVersionName = remember {
         InstalledAppChecker.getInstalledPackageInfo(context, context.packageName)?.versionName
@@ -91,6 +94,14 @@ fun RepoListScreen(
 
     var pendingDownload by remember { mutableStateOf<GithubAsset?>(null) }
     var repoPendingRemoval by remember { mutableStateOf<RepoRelease?>(null) }
+    var wasLoading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isLoading) {
+        if (wasLoading && !uiState.isLoading) {
+            listState.scrollToItem(0)
+        }
+        wasLoading = uiState.isLoading
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -203,7 +214,7 @@ fun RepoListScreen(
                         Text("감시할 저장소가 없습니다.")
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                         items(uiState.repos, key = { it.repo.fullName }) { repoRelease ->
                             RepoCard(
                                 repoRelease = repoRelease,
