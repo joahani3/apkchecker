@@ -373,6 +373,8 @@ private fun RepoCard(
                 onLongClickLabel = "관리 목록에서 삭제"
             )
     ) {
+        val apkAsset = repoRelease.release?.apkAsset
+
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -384,12 +386,14 @@ private fun RepoCard(
                     InstallStatus.NOT_INSTALLED -> StatusChip(
                         label = "new",
                         icon = Icons.Filled.GetApp,
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        onClick = { apkAsset?.let(onDownloadApk) }
                     )
                     InstallStatus.UPDATE_AVAILABLE -> StatusChip(
                         label = "업데이트 필요",
                         icon = Icons.Filled.Update,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        onClick = { apkAsset?.let(onDownloadApk) }
                     )
                     else -> {}
                 }
@@ -442,7 +446,6 @@ private fun RepoCard(
                     }
                 }
 
-                val apkAsset = release?.apkAsset
                 if (apkAsset != null) {
                     AssistChip(
                         onClick = { onDownloadApk(apkAsset) },
@@ -500,10 +503,11 @@ private fun ScopeWarningBanner(message: String, onDismiss: () -> Unit) {
 private fun StatusChip(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    containerColor: androidx.compose.ui.graphics.Color
+    containerColor: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit = {}
 ) {
     SuggestionChip(
-        onClick = {},
+        onClick = onClick,
         label = { Text(label) },
         icon = {
             Icon(icon, contentDescription = null, modifier = Modifier.width(16.dp))
