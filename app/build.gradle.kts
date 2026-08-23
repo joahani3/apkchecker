@@ -13,8 +13,8 @@ android {
         applicationId = "com.releasewatch.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "3.9"
+        versionCode = 11
+        versionName = "3.10"
     }
 
     signingConfigs {

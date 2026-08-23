@@ -99,7 +99,7 @@ class GitHubRepository(
 
             val hidden = hiddenDeferred.await()
             merged.values
-                .filter { (repo, _) -> repo.fullName !in hidden }
+                .filter { (repo, _) -> repo.private && repo.fullName !in hidden }
                 .map { (repo, sources) ->
                     async { buildRepoRelease(repo, sources) }
                 }.awaitAll()
