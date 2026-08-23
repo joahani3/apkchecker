@@ -2,8 +2,10 @@ package com.releasewatch.app.data.download
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import android.provider.Settings
 import android.widget.Toast
 import com.releasewatch.app.data.network.model.GithubAsset
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +42,28 @@ object ApkDownloader {
                 "다운로드 실패 (오류 코드 $failureReason: ${describeFailure(failureReason)})",
                 Toast.LENGTH_LONG
             ).show()
+        } else {
+            promptInstall(context, downloadManager, downloadId)
         }
+    }
+
+    private fun promptInstall(context: Context, downloadManager: DownloadManager, downloadId: Long) {
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            Toast.makeText(context, "설치를 위해 '알 수 없는 앱 설치' 권한을 허용해주세요", Toast.LENGTH_LONG).show()
+            context.startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            return
+        }
+
+        val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return
+        val mimeType = downloadManager.getMimeTypeForDownloadedFile(downloadId)
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, mimeType)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        )
     }
 
     private fun removeExistingDownloads(downloadManager: DownloadManager, title: String) {
