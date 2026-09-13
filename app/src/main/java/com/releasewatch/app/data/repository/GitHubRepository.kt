@@ -171,4 +171,20 @@ class GitHubRepository(
             emptyList()
         }
     }
+
+    // Synced by ~/.claude/scripts/shelf.py on every commit across the user's repos; kept in a
+    // private repo (rather than public GitHub Pages) since the page lists private repo names.
+    suspend fun fetchBookshelfHtml(): Result<String> = runCatching {
+        val owner = tokenStore.getUsername() ?: error("로그인이 필요합니다")
+        val response = api.getRawFileContent(owner, BOOKSHELF_REPO, BOOKSHELF_PATH)
+        if (!response.isSuccessful) {
+            error("책장을 불러오지 못했습니다 (HTTP ${response.code()})")
+        }
+        response.body()?.string() ?: error("책장 내용이 비어 있습니다")
+    }
+
+    private companion object {
+        const val BOOKSHELF_REPO = "coding-bookshelf"
+        const val BOOKSHELF_PATH = "index.html"
+    }
 }

@@ -7,12 +7,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.releasewatch.app.ReleaseWatchApp
+import com.releasewatch.app.ui.bookshelf.BookshelfScreen
 import com.releasewatch.app.ui.login.LoginScreen
 import com.releasewatch.app.ui.repos.RepoListScreen
 
 private object Routes {
     const val LOGIN = "login"
     const val REPOS = "repos"
+    const val BOOKSHELF = "bookshelf"
 }
 
 @Composable
@@ -37,8 +39,12 @@ fun ReleaseWatchNavGraph() {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.REPOS) { inclusive = true }
                     }
-                }
+                },
+                onOpenBookshelf = { navController.navigate(Routes.BOOKSHELF) }
             )
+        }
+        composable(Routes.BOOKSHELF) {
+            BookshelfScreen(onBack = { navController.popBackStack() })
         }
     }
 }

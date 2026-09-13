@@ -28,6 +28,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -87,7 +88,8 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepoListScreen(
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    onOpenBookshelf: () -> Unit
 ) {
     val viewModel: RepoListViewModel = viewModelFactory { RepoListViewModel(it.gitHubRepository, it.backupManager) }
     val context = LocalContext.current
@@ -214,6 +216,14 @@ fun RepoListScreen(
                             onClick = {
                                 menuExpanded = false
                                 restoreLauncher.launch(arrayOf("text/plain"))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("책장 보기") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onOpenBookshelf()
                             }
                         )
                         DropdownMenuItem(

@@ -14,9 +14,15 @@ object NetworkModule {
 
     fun createApi(tokenStore: TokenStore): GitHubApi {
         val authInterceptor = Interceptor { chain ->
-            val requestBuilder = chain.request().newBuilder()
-                .addHeader("Accept", "application/vnd.github+json")
+            val original = chain.request()
+            val requestBuilder = original.newBuilder()
                 .addHeader("X-GitHub-Api-Version", "2022-11-28")
+
+            // Only fall back to the default Accept header if the call site (e.g. a raw-content
+            // request via @Headers) hasn't already set one.
+            if (original.header("Accept") == null) {
+                requestBuilder.addHeader("Accept", "application/vnd.github+json")
+            }
 
             tokenStore.getToken()?.let { token ->
                 requestBuilder.addHeader("Authorization", "Bearer $token")
