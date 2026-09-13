@@ -2,7 +2,7 @@
 
 ## 변경 사항 (이번 실행)
 
-- 추가: SCR-03, FN-07
+- 갱신: FN-07
 
 ## 1. 메뉴/화면 계층 트리
 
@@ -20,7 +20,7 @@
 | SCR-02 | 저장소 목록 | FN-04 | GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos() | 관심 없는 저장소를 관리 목록에서 숨기고, 필요 시 숨긴 저장소를 다시 복원할 수 있게 함 |
 | SCR-02 | 저장소 목록 | FN-05 | BackupManager.createBackup()/restoreBackup() | 감시 대상 저장소 설정을 텍스트 파일로 백업하고 복구할 수 있게 함 |
 | SCR-02 | 저장소 목록 | FN-06 | GitHubRepository.logout() | GitHub 인증 토큰을 지우고 로그인 화면으로 돌아가게 함 |
-| SCR-03 | 책장 | FN-07 | GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, "coding-bookshelf", "index.html") (Accept: application/vnd.github.raw), WebView 렌더링 | PC(~/coding)에서 shelf.py가 만드는 저장소 현황 책장(BOOKSHELF.html)을 앱에서도 바로 볼 수 있게 함. 비공개 저장소 이름/커밋 이력이 담겨 있어 공개 GitHub Pages 대신 비공개 저장소(coding-bookshelf)에 두고, 기존 GitHub PAT 로그인 토큰으로 Contents API를 통해 비공개로 조회함 |
+| SCR-03 | 책장 | FN-07 | GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, "coding-bookshelf", "index.html") (Accept: application/vnd.github.raw), androidx.webkit.WebViewAssetLoader로 캐시 파일을 https://appassets.androidplatform.net 가상 도메인으로 서빙해 WebView 렌더링 | PC(~/coding)에서 shelf.py가 만드는 저장소 현황 책장(BOOKSHELF.html)을 앱에서도 바로 볼 수 있게 함. 비공개 저장소 이름/커밋 이력이 담겨 있어 공개 GitHub Pages 대신 비공개 저장소(coding-bookshelf)에 두고, 기존 GitHub PAT 로그인 토큰으로 Contents API를 통해 비공개로 조회함. file:// 스킴으로 캐시 파일을 직접 로드하면 최신 WebView에서 net::ERR_ACCESS_DENIED가 발생해 WebViewAssetLoader 가상 도메인 방식으로 교체함 |
 
 ## 3. 지식 그래프 (Mermaid)
 
@@ -49,7 +49,7 @@ graph LR
         FN-04_DATA[("GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos()")]
         FN-05_DATA[["BackupManager.createBackup()/restoreBackup()"]]
         FN-06_DATA[("GitHubRepository.logout()")]
-        FN-07_DATA[("GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, &quot;coding-bookshelf&quot;, &quot;index.html&quot;) (Accept: application/vnd.github.raw), WebView 렌더링")]
+        FN-07_DATA[("GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, &quot;coding-bookshelf&quot;, &quot;index.html&quot;) (Accept: application/vnd.github.raw), androidx.webkit.WebViewAssetLoader로 캐시 파일을 https://appassets.androidplatform.net 가상 도메인으로 서빙해 WebView 렌더링")]
     end
 
     SCR-01 --> FN-01

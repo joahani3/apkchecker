@@ -13,8 +13,8 @@ android {
         applicationId = "com.releasewatch.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "3.12"
+        versionCode = 14
+        versionName = "3.13"
     }
 
     signingConfigs {
@@ -73,6 +73,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.7.0")
 
     implementation("androidx.security:security-crypto:1.1.0-alpha03")
+    implementation("androidx.webkit:webkit:1.12.1")
 
     implementation("com.squareup.retrofit2:retrofit:2.12.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.12.0")

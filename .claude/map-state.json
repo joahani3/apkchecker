@@ -35,7 +35,7 @@
       ],
       "id": "SCR-03",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfScreen.kt": "fc0daaae404b7a03d76b2dd07c3d92921efceb3b00c7165f1a0cd8dbbbe39aa0",
+        "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfScreen.kt": "f63f561c4536603751b2482a2c6c3ee428b3e88ab1d218eeb242a97affb9c5aa",
         "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfViewModel.kt": "bf3675445c8551c84e2f82e7a6a19b1f3bd7eeb309aa97a6c1dcb0d844698d83"
       }
     }
@@ -130,8 +130,8 @@
     {
       "screen_id": "SCR-03",
       "name": "책장 조회 (레포 현황 책장 보기)",
-      "data_api": "GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, \"coding-bookshelf\", \"index.html\") (Accept: application/vnd.github.raw), WebView 렌더링",
-      "why": "PC(~/coding)에서 shelf.py가 만드는 저장소 현황 책장(BOOKSHELF.html)을 앱에서도 바로 볼 수 있게 함. 비공개 저장소 이름/커밋 이력이 담겨 있어 공개 GitHub Pages 대신 비공개 저장소(coding-bookshelf)에 두고, 기존 GitHub PAT 로그인 토큰으로 Contents API를 통해 비공개로 조회함",
+      "data_api": "GitHubRepository.fetchBookshelfHtml() → GitHubApi.getRawFileContent(owner, \"coding-bookshelf\", \"index.html\") (Accept: application/vnd.github.raw), androidx.webkit.WebViewAssetLoader로 캐시 파일을 https://appassets.androidplatform.net 가상 도메인으로 서빙해 WebView 렌더링",
+      "why": "PC(~/coding)에서 shelf.py가 만드는 저장소 현황 책장(BOOKSHELF.html)을 앱에서도 바로 볼 수 있게 함. 비공개 저장소 이름/커밋 이력이 담겨 있어 공개 GitHub Pages 대신 비공개 저장소(coding-bookshelf)에 두고, 기존 GitHub PAT 로그인 토큰으로 Contents API를 통해 비공개로 조회함. file:// 스킴으로 캐시 파일을 직접 로드하면 최신 WebView에서 net::ERR_ACCESS_DENIED가 발생해 WebViewAssetLoader 가상 도메인 방식으로 교체함",
       "source_files": [
         "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt",
         "app/src/main/java/com/releasewatch/app/navigation/NavGraph.kt",
@@ -148,7 +148,7 @@
         "app/src/main/java/com/releasewatch/app/data/repository/GitHubRepository.kt": "20bb93b5e8f89ae6bcc1b737332fb7c2dda9c3c30da6a694e7bf444b9d2bbf36",
         "app/src/main/java/com/releasewatch/app/data/network/GitHubApi.kt": "ddb2ca3cbf538bd63167e73cbef36a15bc01a3b0c682b3af32200a8674bf0420",
         "app/src/main/java/com/releasewatch/app/data/network/NetworkModule.kt": "0ac098cd22134483c938d190f0920e57e5e9ab101a2fde96d278b13dee9f7d14",
-        "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfScreen.kt": "fc0daaae404b7a03d76b2dd07c3d92921efceb3b00c7165f1a0cd8dbbbe39aa0",
+        "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfScreen.kt": "f63f561c4536603751b2482a2c6c3ee428b3e88ab1d218eeb242a97affb9c5aa",
         "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfViewModel.kt": "bf3675445c8551c84e2f82e7a6a19b1f3bd7eeb309aa97a6c1dcb0d844698d83"
       }
     }

@@ -6,3 +6,9 @@
 - 주요 변경 (What): GitHubApi에 raw content 조회용 getRawFileContent() 추가(Accept: application/vnd.github.raw), NetworkModule 인터셉터가 호출별 Accept 헤더를 존중하도록 수정, GitHubRepository.fetchBookshelfHtml() 추가, 신규 BookshelfScreen/BookshelfViewModel(WebView 렌더링, 파일 캐시 경유로 대용량 HTML 로드), 상단 ⋮ 메뉴에 '책장 보기' 항목과 NavGraph 'bookshelf' 라우트 추가, versionName 3.11→3.12(versionCode 13). 별도로 ~/.claude/scripts/shelf.py에 sync_to_github()를 추가해 로컬 BOOKSHELF.html 생성 후 gh CLI로 coding-bookshelf/index.html에 자동 동기화하도록 확장(코드리뷰 대상 아님, 앱 저장소 밖 스크립트).
 - 연계 영향 및 개선 과제 (TODO): WebView는 파일 스킴(file://)으로 로드하며 mermaid.js가 인라인 포함되어 외부 네트워크 요청은 없음. coding-bookshelf 저장소 접근 권한이 없는 GitHub 계정으로 로그인하면 책장 조회가 실패하므로(현재는 단일 사용자 개인 앱이라 owner를 로그인 계정으로 가정), 다계정 지원 시 저장소 이름을 설정 가능하게 바꿀 필요 있음.
 
+- [2026-09-13] 책장 화면 net::ERR_ACCESS_DENIED 수정 (file:// → WebViewAssetLoader)
+- 화면/기능 ID: SCR-03 / FN-07
+- 작업 목적 (Why): 책장 보기 메뉴를 눌렀을 때 WebView가 file:// 스킴으로 캐시된 HTML을 로드하다 net::ERR_ACCESS_DENIED로 실패하는 것을 사용자가 실기기에서 확인. 최신 WebView(Chromium)가 앱 전용 저장소라도 file:// URL 로드를 차단하는 경우가 있어 발생
+- 주요 변경 (What): androidx.webkit:webkit 의존성 추가, BookshelfScreen이 WebViewAssetLoader.InternalStoragePathHandler로 cacheDir/bookshelf를 https://appassets.androidplatform.net/bookshelf/ 가상 도메인에 매핑하고 그 URL을 로드하도록 변경 (WebViewClient.shouldInterceptRequest에서 위임). versionName 3.12→3.13(versionCode 14)
+- 연계 영향 및 개선 과제 (TODO): 실기기에서 책장 보기가 정상 로드되는지 재확인 필요. WebViewAssetLoader는 캐시 디렉터리 전체를 가상 도메인 아래 노출하므로, 추후 다른 파일을 같은 cacheDir에 두지 않도록 주의.
+
