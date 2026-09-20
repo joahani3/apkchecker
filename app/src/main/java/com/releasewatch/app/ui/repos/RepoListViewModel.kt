@@ -32,10 +32,6 @@ class RepoListViewModel(
     )
         private set
 
-    init {
-        refresh()
-    }
-
     fun refresh() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)

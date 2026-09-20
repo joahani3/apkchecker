@@ -70,6 +70,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.releasewatch.app.data.download.ApkDownloader
 import com.releasewatch.app.data.install.InstalledAppChecker
 import com.releasewatch.app.data.network.model.GithubAsset
@@ -107,6 +109,11 @@ fun RepoListScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var showHiddenRepos by remember { mutableStateOf(false) }
     var wasLoading by remember { mutableStateOf(false) }
+
+    // 첫 화면에 진입할 때마다(앱 실행/복귀, 다른 화면에서 돌아옴) 새로고침
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.refresh()
+    }
 
     LaunchedEffect(uiState.isLoading) {
         if (wasLoading && !uiState.isLoading) {
