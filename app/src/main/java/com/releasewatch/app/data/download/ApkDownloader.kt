@@ -12,10 +12,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
+/** Bytes received so far; [totalBytes] is -1 until the server reports a size. */
+data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long) {
+    val fraction: Float? get() = if (totalBytes > 0) (downloadedBytes.toFloat() / totalBytes).coerceIn(0f, 1f) else null
+}
+
 object ApkDownloader {
 
-    /** Returns the completed download's id, or null if the download failed. */
-    suspend fun download(context: Context, asset: GithubAsset, token: String?): Long? {
+    /**
+     * Returns the completed download's id, or null if the download failed.
+     * [onProgress] is called on the caller's dispatcher while the download runs.
+     */
+    suspend fun download(
+        context: Context,
+        asset: GithubAsset,
+        token: String?,
+        onProgress: (DownloadProgress) -> Unit = {}
+    ): Long? {
         val resolvedUrl = GithubAssetFetcher.resolveFinalUrl(asset, token)
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
@@ -36,7 +49,7 @@ object ApkDownloader {
         val downloadId = downloadManager.enqueue(request)
         Toast.makeText(context, "${asset.name} 다운로드를 시작합니다", Toast.LENGTH_SHORT).show()
 
-        val failureReason = withContext(Dispatchers.IO) { awaitFailureReason(downloadManager, downloadId) }
+        val failureReason = awaitFailureReason(downloadManager, downloadId, onProgress)
         if (failureReason != null) {
             Toast.makeText(
                 context,
@@ -85,21 +98,35 @@ object ApkDownloader {
         }
     }
 
-    private suspend fun awaitFailureReason(downloadManager: DownloadManager, downloadId: Long): Int? {
+    private class DownloadSnapshot(val status: Int, val reason: Int, val progress: DownloadProgress)
+
+    private suspend fun awaitFailureReason(
+        downloadManager: DownloadManager,
+        downloadId: Long,
+        onProgress: (DownloadProgress) -> Unit
+    ): Int? {
         val query = DownloadManager.Query().setFilterById(downloadId)
         while (true) {
-            val result = downloadManager.query(query)?.use { cursor ->
-                if (!cursor.moveToFirst()) return null
-                val statusCode = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
-                statusCode to reason
+            val snapshot = withContext(Dispatchers.IO) {
+                downloadManager.query(query)?.use { cursor ->
+                    if (!cursor.moveToFirst()) return@use null
+                    DownloadSnapshot(
+                        status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)),
+                        reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)),
+                        progress = DownloadProgress(
+                            downloadedBytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),
+                            totalBytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        )
+                    )
+                }
             } ?: return null
 
-            when (result.first) {
+            onProgress(snapshot.progress)
+            when (snapshot.status) {
                 DownloadManager.STATUS_SUCCESSFUL -> return null
-                DownloadManager.STATUS_FAILED -> return result.second
+                DownloadManager.STATUS_FAILED -> return snapshot.reason
             }
-            delay(500)
+            delay(300)
         }
     }
 

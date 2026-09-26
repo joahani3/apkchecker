@@ -51,6 +51,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
@@ -62,6 +63,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.releasewatch.app.data.download.ApkDownloader
+import com.releasewatch.app.data.download.DownloadProgress
 import com.releasewatch.app.data.install.InstalledAppChecker
 import com.releasewatch.app.data.network.model.GithubAsset
 import com.releasewatch.app.data.network.model.apkAsset
@@ -83,6 +86,7 @@ import com.releasewatch.app.ui.viewModelFactory
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -109,6 +113,22 @@ fun RepoListScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var showHiddenRepos by remember { mutableStateOf(false) }
     var wasLoading by remember { mutableStateOf(false) }
+    // asset id -> 진행 상황 (null 값 = 준비 중, 크기 미확인)
+    val downloadProgress = remember { mutableStateMapOf<Long, DownloadProgress?>() }
+
+    fun startDownload(asset: GithubAsset) {
+        if (asset.id in downloadProgress) return
+        downloadProgress[asset.id] = null
+        coroutineScope.launch {
+            try {
+                ApkDownloader.download(context, asset, viewModel.authToken()) { progress ->
+                    downloadProgress[asset.id] = progress
+                }?.let { pendingInstallId = it }
+            } finally {
+                downloadProgress.remove(asset.id)
+            }
+        }
+    }
 
     // 첫 화면에 진입할 때마다(앱 실행/복귀, 다른 화면에서 돌아옴) 새로고침
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
@@ -127,9 +147,7 @@ fun RepoListScreen(
     ) { granted ->
         if (granted) {
             pendingDownload?.let { asset ->
-                coroutineScope.launch {
-                    ApkDownloader.download(context, asset, viewModel.authToken())?.let { pendingInstallId = it }
-                }
+                startDownload(asset)
             }
         }
         pendingDownload = null
@@ -181,9 +199,7 @@ fun RepoListScreen(
             pendingDownload = asset
             permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
-            coroutineScope.launch {
-                ApkDownloader.download(context, asset, viewModel.authToken())?.let { pendingInstallId = it }
-            }
+            startDownload(asset)
         }
     }
 
@@ -278,6 +294,8 @@ fun RepoListScreen(
                         items(uiState.repos, key = { it.repo.fullName }) { repoRelease ->
                             RepoCard(
                                 repoRelease = repoRelease,
+                                isDownloading = repoRelease.release?.apkAsset?.id?.let { it in downloadProgress } == true,
+                                downloadProgress = repoRelease.release?.apkAsset?.id?.let { downloadProgress[it] },
                                 onOpenRelease = {
                                     val url = repoRelease.release?.htmlUrl ?: repoRelease.repo.htmlUrl
                                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -375,6 +393,8 @@ fun RepoListScreen(
 @Composable
 private fun RepoCard(
     repoRelease: RepoRelease,
+    isDownloading: Boolean,
+    downloadProgress: DownloadProgress?,
     onOpenRelease: () -> Unit,
     onDownloadApk: (GithubAsset) -> Unit,
     onLongPressRemove: () -> Unit
@@ -473,12 +493,46 @@ private fun RepoCard(
                                 modifier = Modifier.width(16.dp)
                             )
                         },
-                        label = { Text("APK") }
+                        label = { Text("APK") },
+                        enabled = !isDownloading
                     )
                 }
             }
+
+            if (isDownloading) {
+                DownloadProgressBar(downloadProgress)
+            }
         }
     }
+}
+
+@Composable
+private fun DownloadProgressBar(progress: DownloadProgress?) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
+        val fraction = progress?.fraction
+        if (fraction != null) {
+            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+        } else {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = when {
+                progress == null -> "다운로드 준비 중…"
+                fraction == null -> "다운로드 중… ${formatBytes(progress.downloadedBytes)}"
+                else -> "다운로드 중… ${(fraction * 100).toInt()}% " +
+                    "(${formatBytes(progress.downloadedBytes)} / ${formatBytes(progress.totalBytes)})"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes >= 1024 * 1024 -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
+    bytes >= 1024 -> String.format(Locale.US, "%.0f KB", bytes / 1024.0)
+    else -> "$bytes B"
 }
 
 @Composable

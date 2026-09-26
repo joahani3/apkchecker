@@ -12,3 +12,15 @@
 - 주요 변경 (What): androidx.webkit:webkit 의존성 추가, BookshelfScreen이 WebViewAssetLoader.InternalStoragePathHandler로 cacheDir/bookshelf를 https://appassets.androidplatform.net/bookshelf/ 가상 도메인에 매핑하고 그 URL을 로드하도록 변경 (WebViewClient.shouldInterceptRequest에서 위임). versionName 3.12→3.13(versionCode 14)
 - 연계 영향 및 개선 과제 (TODO): 실기기에서 책장 보기가 정상 로드되는지 재확인 필요. WebViewAssetLoader는 캐시 디렉터리 전체를 가상 도메인 아래 노출하므로, 추후 다른 파일을 같은 cacheDir에 두지 않도록 주의.
 
+- [2026-09-20] 첫 화면 진입 시마다 저장소 목록 새로고침; 3.14 빌드/릴리스
+- 화면/기능 ID: SCR-02 / FN-02
+- 작업 목적 (Why): 앱을 열거나 다른 화면에서 돌아올 때마다 최신 릴리즈 정보를 보여주기 위함 (기존에는 ViewModel 생성 시 1회만 갱신)
+- 주요 변경 (What): RepoListViewModel의 init{refresh()} 제거, RepoListScreen에 LifecycleEventEffect(ON_START)로 refresh() 호출 추가. versionCode 15 / versionName 3.14로 올리고 push해 CI가 APK 릴리스 생성
+- 연계 영향 및 개선 과제 (TODO): 화면 회전(액티비티 재생성) 시에도 ON_START로 재갱신될 수 있음. Play Console 버전 표시(WIP)는 이번 커밋에서 제외됨. CI 워크플로 제목을 'apk vX.Y'로 자동화 가능 (workflow 스코프 확보됨)
+
+- [2026-09-26] APK 다운로드 진행률 표시; 3.15 빌드/릴리스
+- 화면/기능 ID: SCR-02 / FN-03
+- 작업 목적 (Why): APK 다운로드를 누른 뒤 진행 상황을 앱 안에서 확인할 수 없어 다운로드 중인지 알기 어려웠음
+- 주요 변경 (What): ApkDownloader에 DownloadProgress/onProgress 콜백 추가(DownloadManager 받은/전체 바이트 폴링), RepoListScreen 카드 하단에 LinearProgressIndicator + 퍼센트/용량 표시, 다운로드 중 APK 칩 비활성화 및 중복 다운로드 방지. versionCode 16 / versionName 3.15
+- 연계 영향 및 개선 과제 (TODO): 화면을 벗어나면(컴포지션 해제) 진행률 추적이 끊김 — 다운로드 자체는 DownloadManager가 계속함. Play Console 버전 표시(WIP)는 이번 커밋에서도 제외됨
+
