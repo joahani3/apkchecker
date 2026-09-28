@@ -30,3 +30,9 @@
 - 주요 변경 (What): versionCode 17 / versionName 3.16으로 올리고 push해 CI가 APK 릴리스 생성. 앱 코드는 3.15와 동일
 - 연계 영향 및 개선 과제 (TODO): Play Console 버전 표시(WIP)는 서비스 계정 키를 런타임에 비공개 저장소에서 받아오는 구조라 이번 커밋에서도 제외하고 git stash로 보관함. 공개 릴리스에 포함할지 결정 필요
 
+- [2026-09-28] 3.17 로컬 빌드 후 GitHub Release 수동 업로드
+- 화면/기능 ID: 미상 / 미상
+- 작업 목적 (Why): CI 대신 로컬에서 APK를 빌드해 직접 업로드하길 원함
+- 주요 변경 (What): versionCode 18 / versionName 3.17로 올리고 [skip ci] 커밋으로 CI 중복 릴리스 방지. 로컬 assembleDebug APK를 gh release create로 v3.17 태그(제목 'apk v3.17')에 업로드. 앱 코드는 3.15/3.16과 동일
+- 연계 영향 및 개선 과제 (TODO): 수동 릴리스 태그는 v3.17 형식이라 CI의 apk-N 태그와 섞임. Play Console 버전 표시(WIP)는 여전히 제외되어 stash에서 작업 트리로 복원됨
+
