@@ -99,7 +99,7 @@ class GitHubRepository(
 
             val hidden = hiddenDeferred.await()
             merged.values
-                .filter { (repo, _) -> repo.fullName !in hidden }
+                .filter { (repo, _) -> repo.fullName !in hidden && !isDistributionMirror(repo) }
                 .map { (repo, sources) ->
                     async { buildRepoRelease(repo, sources) }
                 }.awaitAll()
@@ -111,6 +111,11 @@ class GitHubRepository(
                 )
         }
     }
+
+    // "<name>-app" repos are public release mirrors of private source repos, which are already
+    // listed on their own; showing both would put the same app on the list twice.
+    private fun isDistributionMirror(repo: GithubRepo): Boolean =
+        repo.name.endsWith("-app", ignoreCase = true)
 
     private fun installPriority(status: InstallStatus): Int = when (status) {
         InstallStatus.NOT_INSTALLED -> 0

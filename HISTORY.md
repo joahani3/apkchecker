@@ -36,3 +36,9 @@
 - 주요 변경 (What): versionCode 18 / versionName 3.17로 올리고 [skip ci] 커밋으로 CI 중복 릴리스 방지. 로컬 assembleDebug APK를 gh release create로 v3.17 태그(제목 'apk v3.17')에 업로드. 앱 코드는 3.15/3.16과 동일
 - 연계 영향 및 개선 과제 (TODO): 수동 릴리스 태그는 v3.17 형식이라 CI의 apk-N 태그와 섞임. Play Console 버전 표시(WIP)는 여전히 제외되어 stash에서 작업 트리로 복원됨
 
+- [2026-09-28] 공개 저장소도 최신 릴리스에 APK가 있으면 목록에 표시; 3.18 로컬 빌드/릴리스
+- 화면/기능 ID: SCR-02 / FN-02
+- 작업 목적 (Why): apkchecker 저장소를 공개로 바꾼 뒤 3.10의 비공개 전용 필터 때문에 앱 자신의 저장소가 저장소 목록에서 사라짐
+- 주요 변경 (What): GitHubRepository.refreshRepos에서 repo.private 필터 제거, buildRepoRelease가 공개 저장소는 최신 릴리스에 APK 에셋이 없으면 null을 반환하고 filterNotNull로 제외. versionCode 19 / versionName 3.18, 로컬 assembleDebug APK를 v3.18 릴리스로 업로드([skip ci])
+- 연계 영향 및 개선 과제 (TODO): 공개 -app 저장소(SMSBridge-app, PDFmasking-app 등 11개)도 APK 릴리스가 있어 목록에 새로 나타남 — 비공개 원본 저장소와 중복될 수 있어 숨기기 또는 추가 규칙 필요. 공개 저장소마다 latest release 요청이 1회씩 늘어남. Play Console 버전 표시(WIP)는 이번에도 제외
+
