@@ -99,10 +99,11 @@ class GitHubRepository(
 
             val hidden = hiddenDeferred.await()
             merged.values
-                .filter { (repo, _) -> repo.private && repo.fullName !in hidden }
+                .filter { (repo, _) -> repo.fullName !in hidden }
                 .map { (repo, sources) ->
                     async { buildRepoRelease(repo, sources) }
                 }.awaitAll()
+                .filterNotNull()
                 .sortedWith(
                     compareBy<RepoRelease> { installPriority(it.installStatus) }
                         .thenByDescending { it.release?.publishedAt ?: "" }
@@ -117,8 +118,11 @@ class GitHubRepository(
         InstallStatus.UP_TO_DATE, InstallStatus.UNKNOWN -> 2
     }
 
-    private suspend fun buildRepoRelease(repo: GithubRepo, sources: Set<RepoSource>): RepoRelease {
+    // Private repos are always listed; public ones only when their latest release ships an APK,
+    // so the app's own (public) repo shows up without pulling in docs-only public repos.
+    private suspend fun buildRepoRelease(repo: GithubRepo, sources: Set<RepoSource>): RepoRelease? {
         val release = fetchLatestReleaseOrNull(repo.owner.login, repo.name)
+        if (!repo.private && release?.apkAsset == null) return null
         val (installStatus, installedVersionName) = resolveInstallStatus(repo, release)
 
         return RepoRelease(repo, release, sources, installStatus, installedVersionName)
