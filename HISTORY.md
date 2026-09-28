@@ -42,3 +42,9 @@
 - 주요 변경 (What): GitHubRepository.refreshRepos에서 repo.private 필터 제거, buildRepoRelease가 공개 저장소는 최신 릴리스에 APK 에셋이 없으면 null을 반환하고 filterNotNull로 제외. versionCode 19 / versionName 3.18, 로컬 assembleDebug APK를 v3.18 릴리스로 업로드([skip ci])
 - 연계 영향 및 개선 과제 (TODO): 공개 -app 저장소(SMSBridge-app, PDFmasking-app 등 11개)도 APK 릴리스가 있어 목록에 새로 나타남 — 비공개 원본 저장소와 중복될 수 있어 숨기기 또는 추가 규칙 필요. 공개 저장소마다 latest release 요청이 1회씩 늘어남. Play Console 버전 표시(WIP)는 이번에도 제외
 
+- [2026-09-28] -app 배포용 미러 저장소를 목록에서 제외; 3.19 로컬 빌드/릴리스
+- 화면/기능 ID: SCR-02 / FN-02
+- 작업 목적 (Why): 3.18에서 APK가 있는 공개 저장소를 표시하면서, 비공개 원본의 공개 배포 미러인 -app 저장소 11개가 함께 나타나 같은 앱이 중복될 수 있었음
+- 주요 변경 (What): GitHubRepository에 isDistributionMirror(이름이 -app으로 끝남, 대소문자 무시) 추가, refreshRepos 필터에서 제외. 비공개 -app 저장소는 없음을 확인. versionCode 20 / versionName 3.19, 로컬 APK를 v3.19 릴리스로 업로드([skip ci])
+- 연계 영향 및 개선 과제 (TODO): 이름 규칙 기반이라 -app이 아닌 미러 저장소는 걸러지지 않음. Play Console 버전 표시(WIP)는 이번에도 제외
+
