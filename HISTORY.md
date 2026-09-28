@@ -24,3 +24,9 @@
 - 주요 변경 (What): ApkDownloader에 DownloadProgress/onProgress 콜백 추가(DownloadManager 받은/전체 바이트 폴링), RepoListScreen 카드 하단에 LinearProgressIndicator + 퍼센트/용량 표시, 다운로드 중 APK 칩 비활성화 및 중복 다운로드 방지. versionCode 16 / versionName 3.15
 - 연계 영향 및 개선 과제 (TODO): 화면을 벗어나면(컴포지션 해제) 진행률 추적이 끊김 — 다운로드 자체는 DownloadManager가 계속함. Play Console 버전 표시(WIP)는 이번 커밋에서도 제외됨
 
+- [2026-09-28] 3.16 빌드/릴리스 (버전만 올림)
+- 화면/기능 ID: 미상 / 미상
+- 작업 목적 (Why): GitHub Releases 전용 배포 흐름에 따라 새 APK 릴리스 요청
+- 주요 변경 (What): versionCode 17 / versionName 3.16으로 올리고 push해 CI가 APK 릴리스 생성. 앱 코드는 3.15와 동일
+- 연계 영향 및 개선 과제 (TODO): Play Console 버전 표시(WIP)는 서비스 계정 키를 런타임에 비공개 저장소에서 받아오는 구조라 이번 커밋에서도 제외하고 git stash로 보관함. 공개 릴리스에 포함할지 결정 필요
+
