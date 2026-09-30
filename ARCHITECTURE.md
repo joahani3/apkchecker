@@ -15,7 +15,7 @@
 | 화면 ID | 화면명 | 기능 ID | 연동 데이터/API | 개발 목적 (Why) |
 |---|---|---|---|---|
 | SCR-01 | 로그인 | FN-01 | GitHubRepository.login(token) | GitHub Personal Access Token으로 인증하여 내 저장소와 star/watch 저장소의 릴리즈를 확인할 수 있게 함 |
-| SCR-02 | 저장소 목록 | FN-02 | GitHubRepository.refreshRepos() (installStatus/pushedToday 기준 정렬, repo.pushedAt으로 당일 push 판정) | 로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여주며, 첫 화면에 진입할 때마다(ON_START) 자동 새로고침해 항상 최신 상태를 유지함. 목록을 NEW/UPDATE/ALL 탭으로 나눠 설치 필요·업데이트 필요 저장소를 구분해서 보여주고(대상 있으면 탭에 'NEW(3)'처럼 개수 표시), 오늘 push된 저장소는 정렬 최상단에 올리고 카드에 '오늘 업데이트' 배지로 표시함 |
+| SCR-02 | 저장소 목록 | FN-02 | GitHubRepository.refreshRepos() (installStatus/pushedToday 기준 정렬, repo.pushedAt으로 당일 push 판정, release.publishedAt으로 당일 빌드 판정) | 로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여주며, 첫 화면에 진입할 때마다(ON_START) 자동 새로고침해 항상 최신 상태를 유지함. 목록을 APK/TODAY/ALL 탭으로 나눔: APK 탭은 설치 필요·업데이트 필요 저장소를 모아서 보여주고, TODAY 탭은 오늘 소스가 push된 저장소만 모아 1순위(오늘 push했지만 아직 APK 빌드 없음) 다음에 2순위(오늘 push+오늘 APK 빌드도 있음) 순으로 보여줌(대상 있으면 탭에 'APK(3)'처럼 개수 표시). 오늘 push된 저장소는 전체 정렬에서도 최상단에 올리고 카드에 '오늘 업데이트' 배지로 표시함 |
 | SCR-02 | 저장소 목록 | FN-03 | ApkDownloader.download(onProgress)/install(), DownloadManager 진행 바이트 폴링, InstalledAppChecker.getInstalledPackageInfo() | 새 릴리즈 또는 업데이트가 있는 저장소의 APK 에셋을 다운로드하고 바로 설치할 수 있게 하며, 카드에 진행률 바(%/용량)를 보여줘 다운로드 현황을 확인하고 중복 다운로드를 막음 |
 | SCR-02 | 저장소 목록 | FN-04 | GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos() | 관심 없는 저장소를 관리 목록에서 숨기고, 필요 시 숨긴 저장소를 다시 복원할 수 있게 함 |
 | SCR-02 | 저장소 목록 | FN-05 | BackupManager.createBackup()/restoreBackup() | 감시 대상 저장소 설정을 텍스트 파일로 백업하고 복구할 수 있게 함 |
@@ -44,7 +44,7 @@ graph LR
 
     subgraph DataService ["백그라운드 &amp; 저장소"]
         FN-01_DATA[("GitHubRepository.login(token)")]
-        FN-02_DATA[("GitHubRepository.refreshRepos() (installStatus/pushedToday 기준 정렬, repo.pushedAt으로 당일 push 판정)")]
+        FN-02_DATA[("GitHubRepository.refreshRepos() (installStatus/pushedToday 기준 정렬, repo.pushedAt으로 당일 push 판정, release.publishedAt으로 당일 빌드 판정)")]
         FN-03_DATA[["ApkDownloader.download(onProgress)/install(), DownloadManager 진행 바이트 폴링, InstalledAppChecker.getInstalledPackageInfo()"]]
         FN-04_DATA[("GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos()")]
         FN-05_DATA[["BackupManager.createBackup()/restoreBackup()"]]

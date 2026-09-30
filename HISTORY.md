@@ -54,3 +54,9 @@
 - 주요 변경 (What): RepoListScreen에 NEW/UPDATE/ALL 탭 UI 추가(대상 있으면 'NEW(3)' 형식으로 개수 표시), 책장 버튼을 탭 행 우측으로 이동; GithubRepo에 pushed_at 필드를 추가해 오늘 푸시된 저장소를 정렬 최상단으로 올리고 카드에 '오늘 업데이트' 배지 표시; PlayConsoleRepository/AndroidPublisherApi/GoogleApiModule/JwtSigner 등 Play Console API 연동을 커밋해 저장소 카드에 Play 비공개 테스트/프로덕션 버전 노출; versionCode 21 / versionName 3.20으로 bump
 - 연계 영향 및 개선 과제 (TODO): release-apk.yml이 push 시 자동으로 debug APK를 빌드해 GitHub Release를 생성하므로, 생성된 릴리즈 제목을 'apk v3.20' 형식으로 수동 변경 필요(워크플로 파일 수정 권한 없음); Play Console 서비스 계정 키 로드 및 트랙 버전 조회가 실기기에서 정상 동작하는지 확인 필요
 
+- [2026-09-30] 저장소 목록 탭을 NEW/UPDATE에서 APK/TODAY로 개편하고, 오늘 push됐지만 아직 APK 빌드가 없는 저장소를 우선 노출
+- 화면/기능 ID: SCR-02 / FN-02
+- 작업 목적 (Why): 신규/업데이트 대상은 하나의 APK 탭으로 합치고, 오늘 소스가 바뀐 저장소 중 아직 빌드가 안 된 것을 먼저 확인하고 싶다는 요청
+- 주요 변경 (What): RepoListTab을 NEW/UPDATE/ALL에서 APK/TODAY/ALL로 변경. APK 탭은 기존 NOT_INSTALLED+UPDATE_AVAILABLE을 합친 목록으로 동작. TODAY 탭은 repo.pushedToday인 저장소만 모아, 1순위(오늘 push했지만 releaseToday 없음) 다음에 2순위(오늘 push+오늘 release도 있음) 순으로 정렬. RepoRelease/GitHubRepository에 releaseToday(release.publishedAt이 오늘인지) 필드 추가. versionCode 22 / versionName 3.21로 bump
+- 연계 영향 및 개선 과제 (TODO): release-apk.yml push 트리거로 CI가 debug APK를 빌드해 GitHub Release를 생성하면, 릴리즈 제목을 'apk v3.21' 형식으로 수동 변경 필요(워크플로 파일 수정 권한 없음)
+
