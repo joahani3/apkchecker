@@ -2,6 +2,7 @@ package com.releasewatch.app.data.repository
 
 import com.releasewatch.app.data.network.model.GithubRelease
 import com.releasewatch.app.data.network.model.GithubRepo
+import com.releasewatch.app.data.playconsole.PlayTrackVersions
 
 enum class RepoSource {
     OWNED, STARRED, WATCHED
@@ -16,5 +17,7 @@ data class RepoRelease(
     val release: GithubRelease?,
     val sources: Set<RepoSource>,
     val installStatus: InstallStatus = InstallStatus.UNKNOWN,
-    val installedVersionName: String? = null
+    val installedVersionName: String? = null,
+    val playVersions: PlayTrackVersions? = null,
+    val pushedToday: Boolean = false
 )

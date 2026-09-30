@@ -22,8 +22,8 @@
       ],
       "id": "SCR-02",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19",
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "199a4ca75013761aefb571ccf0082b4b5f496bc9a3bbe82496cc538024477ff1"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "a2385fd6e5c640653ebacc6f0c5897db3af8a8c1c1ac4768ad3eaf29f346cfd0"
       }
     },
     {
@@ -60,28 +60,30 @@
       "screen_id": "SCR-02",
       "name": "저장소/릴리즈 목록 조회 및 새로고침",
       "data_api": "GitHubRepository.refreshRepos()",
-      "why": "로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여줌",
+      "why": "로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여주며, 첫 화면에 진입할 때마다(ON_START) 자동 새로고침해 항상 최신 상태를 유지함",
       "source_files": [
         "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt",
         "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt"
       ],
       "id": "FN-02",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19",
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "199a4ca75013761aefb571ccf0082b4b5f496bc9a3bbe82496cc538024477ff1"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "a2385fd6e5c640653ebacc6f0c5897db3af8a8c1c1ac4768ad3eaf29f346cfd0"
       }
     },
     {
       "screen_id": "SCR-02",
-      "name": "APK 다운로드 및 설치",
-      "data_api": "ApkDownloader.download()/install(), InstalledAppChecker.getInstalledPackageInfo()",
-      "why": "새 릴리즈 또는 업데이트가 있는 저장소의 APK 에셋을 다운로드하고 바로 설치할 수 있게 함",
+      "name": "APK 다운로드(진행률 표시) 및 설치",
+      "data_api": "ApkDownloader.download(onProgress)/install(), DownloadManager 진행 바이트 폴링, InstalledAppChecker.getInstalledPackageInfo()",
+      "why": "새 릴리즈 또는 업데이트가 있는 저장소의 APK 에셋을 다운로드하고 바로 설치할 수 있게 하며, 카드에 진행률 바(%/용량)를 보여줘 다운로드 현황을 확인하고 중복 다운로드를 막음",
       "source_files": [
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt",
+        "app/src/main/java/com/releasewatch/app/data/download/ApkDownloader.kt"
       ],
       "id": "FN-03",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
+        "app/src/main/java/com/releasewatch/app/data/download/ApkDownloader.kt": "f7935a42d1c85b47c6a02e8248cf9d2e85b16cb034cef92918fd8d7f50b0e50c"
       }
     },
     {
@@ -95,8 +97,8 @@
       ],
       "id": "FN-04",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19",
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "199a4ca75013761aefb571ccf0082b4b5f496bc9a3bbe82496cc538024477ff1"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "a2385fd6e5c640653ebacc6f0c5897db3af8a8c1c1ac4768ad3eaf29f346cfd0"
       }
     },
     {
@@ -110,8 +112,8 @@
       ],
       "id": "FN-05",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19",
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "199a4ca75013761aefb571ccf0082b4b5f496bc9a3bbe82496cc538024477ff1"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "a2385fd6e5c640653ebacc6f0c5897db3af8a8c1c1ac4768ad3eaf29f346cfd0"
       }
     },
     {
@@ -124,7 +126,7 @@
       ],
       "id": "FN-06",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "199a4ca75013761aefb571ccf0082b4b5f496bc9a3bbe82496cc538024477ff1"
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListViewModel.kt": "a2385fd6e5c640653ebacc6f0c5897db3af8a8c1c1ac4768ad3eaf29f346cfd0"
       }
     },
     {
@@ -143,9 +145,9 @@
       ],
       "id": "FN-07",
       "file_hashes": {
-        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "6fd665d8f011ca7a7af6234adb4828b5de02ecd176e5f22028cc8feb2076cc19",
+        "app/src/main/java/com/releasewatch/app/ui/repos/RepoListScreen.kt": "62b2025b87c98ac1fdc25d07dc23f49fb0d5fd8c1f5f6991bebbc425b61dd749",
         "app/src/main/java/com/releasewatch/app/navigation/NavGraph.kt": "adccbc961c66d8a9386182afa6b7073da09e54e797c1d4a61dcee7074c0a73fb",
-        "app/src/main/java/com/releasewatch/app/data/repository/GitHubRepository.kt": "20bb93b5e8f89ae6bcc1b737332fb7c2dda9c3c30da6a694e7bf444b9d2bbf36",
+        "app/src/main/java/com/releasewatch/app/data/repository/GitHubRepository.kt": "2b4e9e726540c3f869e2f9bb5cae691d7ea9032f638ddb64ca88406dff86d275",
         "app/src/main/java/com/releasewatch/app/data/network/GitHubApi.kt": "ddb2ca3cbf538bd63167e73cbef36a15bc01a3b0c682b3af32200a8674bf0420",
         "app/src/main/java/com/releasewatch/app/data/network/NetworkModule.kt": "0ac098cd22134483c938d190f0920e57e5e9ab101a2fde96d278b13dee9f7d14",
         "app/src/main/java/com/releasewatch/app/ui/bookshelf/BookshelfScreen.kt": "f63f561c4536603751b2482a2c6c3ee428b3e88ab1d218eeb242a97affb9c5aa",

@@ -2,7 +2,7 @@
 
 ## 변경 사항 (이번 실행)
 
-- 갱신: FN-07
+- 변경 없음 (기존 구조와 동일)
 
 ## 1. 메뉴/화면 계층 트리
 
@@ -15,8 +15,8 @@
 | 화면 ID | 화면명 | 기능 ID | 연동 데이터/API | 개발 목적 (Why) |
 |---|---|---|---|---|
 | SCR-01 | 로그인 | FN-01 | GitHubRepository.login(token) | GitHub Personal Access Token으로 인증하여 내 저장소와 star/watch 저장소의 릴리즈를 확인할 수 있게 함 |
-| SCR-02 | 저장소 목록 | FN-02 | GitHubRepository.refreshRepos() | 로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여줌 |
-| SCR-02 | 저장소 목록 | FN-03 | ApkDownloader.download()/install(), InstalledAppChecker.getInstalledPackageInfo() | 새 릴리즈 또는 업데이트가 있는 저장소의 APK 에셋을 다운로드하고 바로 설치할 수 있게 함 |
+| SCR-02 | 저장소 목록 | FN-02 | GitHubRepository.refreshRepos() | 로그인한 사용자의 소유/Star/Watch 저장소별 최신 릴리즈와 설치 상태를 보여주며, 첫 화면에 진입할 때마다(ON_START) 자동 새로고침해 항상 최신 상태를 유지함 |
+| SCR-02 | 저장소 목록 | FN-03 | ApkDownloader.download(onProgress)/install(), DownloadManager 진행 바이트 폴링, InstalledAppChecker.getInstalledPackageInfo() | 새 릴리즈 또는 업데이트가 있는 저장소의 APK 에셋을 다운로드하고 바로 설치할 수 있게 하며, 카드에 진행률 바(%/용량)를 보여줘 다운로드 현황을 확인하고 중복 다운로드를 막음 |
 | SCR-02 | 저장소 목록 | FN-04 | GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos() | 관심 없는 저장소를 관리 목록에서 숨기고, 필요 시 숨긴 저장소를 다시 복원할 수 있게 함 |
 | SCR-02 | 저장소 목록 | FN-05 | BackupManager.createBackup()/restoreBackup() | 감시 대상 저장소 설정을 텍스트 파일로 백업하고 복구할 수 있게 함 |
 | SCR-02 | 저장소 목록 | FN-06 | GitHubRepository.logout() | GitHub 인증 토큰을 지우고 로그인 화면으로 돌아가게 함 |
@@ -35,7 +35,7 @@ graph LR
     subgraph Features ["기능"]
         FN-01["(FN-01) GitHub PAT 로그인"]
         FN-02["(FN-02) 저장소/릴리즈 목록 조회 및 새로고침"]
-        FN-03["(FN-03) APK 다운로드 및 설치"]
+        FN-03["(FN-03) APK 다운로드(진행률 표시) 및 설치"]
         FN-04["(FN-04) 저장소 숨기기/복원 관리"]
         FN-05["(FN-05) 설정 백업/복구"]
         FN-06["(FN-06) 로그아웃"]
@@ -45,7 +45,7 @@ graph LR
     subgraph DataService ["백그라운드 &amp; 저장소"]
         FN-01_DATA[("GitHubRepository.login(token)")]
         FN-02_DATA[("GitHubRepository.refreshRepos()")]
-        FN-03_DATA[("ApkDownloader.download()/install(), InstalledAppChecker.getInstalledPackageInfo()")]
+        FN-03_DATA[["ApkDownloader.download(onProgress)/install(), DownloadManager 진행 바이트 폴링, InstalledAppChecker.getInstalledPackageInfo()"]]
         FN-04_DATA[("GitHubRepository.hideRepo()/unhideRepo()/getHiddenRepos()")]
         FN-05_DATA[["BackupManager.createBackup()/restoreBackup()"]]
         FN-06_DATA[("GitHubRepository.logout()")]

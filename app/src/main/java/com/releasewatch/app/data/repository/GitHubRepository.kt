@@ -15,6 +15,10 @@ import com.releasewatch.app.data.network.model.GithubAsset
 import com.releasewatch.app.data.network.model.GithubRelease
 import com.releasewatch.app.data.network.model.GithubRepo
 import com.releasewatch.app.data.network.model.apkAsset
+import com.releasewatch.app.data.playconsole.PlayConsoleRepository
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -25,7 +29,8 @@ class GitHubRepository(
     private val tokenStore: TokenStore,
     private val dao: ReleaseStateDao,
     private val hiddenRepoDao: HiddenRepoDao,
-    private val repoPackageDao: RepoPackageDao
+    private val repoPackageDao: RepoPackageDao,
+    private val playConsoleRepository: PlayConsoleRepository
 ) {
 
     fun isLoggedIn(): Boolean = tokenStore.getToken() != null
@@ -105,7 +110,8 @@ class GitHubRepository(
                 }.awaitAll()
                 .filterNotNull()
                 .sortedWith(
-                    compareBy<RepoRelease> { installPriority(it.installStatus) }
+                    compareByDescending<RepoRelease> { it.pushedToday }
+                        .thenBy { installPriority(it.installStatus) }
                         .thenByDescending { it.release?.publishedAt ?: "" }
                         .thenBy { it.repo.fullName.lowercase() }
                 )
@@ -128,17 +134,25 @@ class GitHubRepository(
     private suspend fun buildRepoRelease(repo: GithubRepo, sources: Set<RepoSource>): RepoRelease? {
         val release = fetchLatestReleaseOrNull(repo.owner.login, repo.name)
         if (!repo.private && release?.apkAsset == null) return null
-        val (installStatus, installedVersionName) = resolveInstallStatus(repo, release)
+        val packageName = release?.apkAsset?.let { resolvePackageName(repo.fullName, it) }
+        val (installStatus, installedVersionName) = resolveInstallStatus(release, packageName)
+        val playVersions = packageName?.let { playConsoleRepository.fetchTrackVersions(it) }
+        val pushedToday = isToday(repo.pushedAt)
 
-        return RepoRelease(repo, release, sources, installStatus, installedVersionName)
+        return RepoRelease(repo, release, sources, installStatus, installedVersionName, playVersions, pushedToday)
+    }
+
+    private fun isToday(iso: String?): Boolean {
+        val instant = iso?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return false
+        return instant.atZone(ZoneId.systemDefault()).toLocalDate() == LocalDate.now()
     }
 
     private suspend fun resolveInstallStatus(
-        repo: GithubRepo,
-        release: GithubRelease?
+        release: GithubRelease?,
+        packageName: String?
     ): Pair<InstallStatus, String?> {
-        val apkAsset = release?.apkAsset ?: return InstallStatus.UNKNOWN to null
-        val packageName = resolvePackageName(repo.fullName, apkAsset) ?: return InstallStatus.UNKNOWN to null
+        if (release?.apkAsset == null) return InstallStatus.UNKNOWN to null
+        packageName ?: return InstallStatus.UNKNOWN to null
 
         val installed = InstalledAppChecker.getInstalledPackageInfo(context, packageName)
             ?: return InstallStatus.NOT_INSTALLED to null

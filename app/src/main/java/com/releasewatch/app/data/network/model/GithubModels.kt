@@ -22,7 +22,10 @@ data class GithubRepo(
     val owner: GithubOwner,
     @Json(name = "html_url") val htmlUrl: String,
     val private: Boolean,
-    @Json(name = "stargazers_count") val stargazersCount: Int = 0
+    @Json(name = "stargazers_count") val stargazersCount: Int = 0,
+    // Updated on any push to any branch, including a brand-new branch's first push, so it
+    // doubles as "branch created or source pushed today" without extra API calls.
+    @Json(name = "pushed_at") val pushedAt: String? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
@@ -56,6 +57,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -91,6 +94,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private enum class RepoListTab { NEW, UPDATE, ALL }
+
+private fun tabLabel(name: String, count: Int): String =
+    if (count > 0) "$name($count)" else name
+
+private fun emptyMessageFor(tab: RepoListTab, hasAnyRepo: Boolean): String {
+    if (!hasAnyRepo) return "감시할 저장소가 없습니다."
+    return when (tab) {
+        RepoListTab.NEW -> "새로 설치할 저장소가 없습니다."
+        RepoListTab.UPDATE -> "업데이트할 저장소가 없습니다."
+        RepoListTab.ALL -> "감시할 저장소가 없습니다."
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepoListScreen(
@@ -113,6 +130,7 @@ fun RepoListScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var showHiddenRepos by remember { mutableStateOf(false) }
     var wasLoading by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(RepoListTab.NEW) }
     // asset id -> 진행 상황 (null 값 = 준비 중, 크기 미확인)
     val downloadProgress = remember { mutableStateMapOf<Long, DownloadProgress?>() }
 
@@ -203,6 +221,18 @@ fun RepoListScreen(
         }
     }
 
+    val newRepos = remember(uiState.repos) {
+        uiState.repos.filter { it.installStatus == InstallStatus.NOT_INSTALLED }
+    }
+    val updateRepos = remember(uiState.repos) {
+        uiState.repos.filter { it.installStatus == InstallStatus.UPDATE_AVAILABLE }
+    }
+    val displayedRepos = when (selectedTab) {
+        RepoListTab.NEW -> newRepos
+        RepoListTab.UPDATE -> updateRepos
+        RepoListTab.ALL -> uiState.repos
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -242,14 +272,6 @@ fun RepoListScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("책장 보기") },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                onOpenBookshelf()
-                            }
-                        )
-                        DropdownMenuItem(
                             text = { Text("숨긴 저장소 관리") },
                             leadingIcon = { Icon(Icons.Filled.VisibilityOff, contentDescription = null) },
                             onClick = {
@@ -272,6 +294,38 @@ fun RepoListScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TabRow(
+                    selectedTabIndex = selectedTab.ordinal,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Tab(
+                        selected = selectedTab == RepoListTab.NEW,
+                        onClick = { selectedTab = RepoListTab.NEW },
+                        text = { Text(tabLabel("NEW", newRepos.size)) }
+                    )
+                    Tab(
+                        selected = selectedTab == RepoListTab.UPDATE,
+                        onClick = { selectedTab = RepoListTab.UPDATE },
+                        text = { Text(tabLabel("UPDATE", updateRepos.size)) }
+                    )
+                    Tab(
+                        selected = selectedTab == RepoListTab.ALL,
+                        onClick = { selectedTab = RepoListTab.ALL },
+                        text = { Text("ALL") }
+                    )
+                }
+                TextButton(onClick = onOpenBookshelf) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.MenuBook,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("책장")
+                }
+            }
+
             uiState.scopeWarning?.let { warning ->
                 ScopeWarningBanner(message = warning, onDismiss = { viewModel.dismissScopeWarning() })
             }
@@ -285,13 +339,13 @@ fun RepoListScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(uiState.errorMessage)
                     }
-                } else if (!uiState.isLoading && uiState.repos.isEmpty()) {
+                } else if (!uiState.isLoading && displayedRepos.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("감시할 저장소가 없습니다.")
+                        Text(emptyMessageFor(selectedTab, hasAnyRepo = uiState.repos.isNotEmpty()))
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
-                        items(uiState.repos, key = { it.repo.fullName }) { repoRelease ->
+                        items(displayedRepos, key = { it.repo.fullName }) { repoRelease ->
                             RepoCard(
                                 repoRelease = repoRelease,
                                 isDownloading = repoRelease.release?.apkAsset?.id?.let { it in downloadProgress } == true,
@@ -419,6 +473,14 @@ private fun RepoCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
+                if (repoRelease.pushedToday) {
+                    StatusChip(
+                        label = "오늘 업데이트",
+                        icon = Icons.Filled.NewReleases,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
                 when (repoRelease.installStatus) {
                     InstallStatus.NOT_INSTALLED -> StatusChip(
                         label = "new",
@@ -452,6 +514,20 @@ private fun RepoCard(
                 repoRelease.installedVersionName?.let { installedVersion ->
                     Text(
                         text = "설치된 버전: $installedVersion",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                repoRelease.playVersions?.closedTesting?.let { version ->
+                    Text(
+                        text = "Play 비공개 테스트: $version",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                repoRelease.playVersions?.production?.let { version ->
+                    Text(
+                        text = "Play 프로덕션: $version",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
