@@ -138,8 +138,11 @@ class GitHubRepository(
         val (installStatus, installedVersionName) = resolveInstallStatus(release, packageName)
         val playVersions = packageName?.let { playConsoleRepository.fetchTrackVersions(it) }
         val pushedToday = isToday(repo.pushedAt)
+        val releaseToday = isToday(release?.publishedAt)
 
-        return RepoRelease(repo, release, sources, installStatus, installedVersionName, playVersions, pushedToday)
+        return RepoRelease(
+            repo, release, sources, installStatus, installedVersionName, playVersions, pushedToday, releaseToday
+        )
     }
 
     private fun isToday(iso: String?): Boolean {

@@ -19,5 +19,6 @@ data class RepoRelease(
     val installStatus: InstallStatus = InstallStatus.UNKNOWN,
     val installedVersionName: String? = null,
     val playVersions: PlayTrackVersions? = null,
-    val pushedToday: Boolean = false
+    val pushedToday: Boolean = false,
+    val releaseToday: Boolean = false
 )

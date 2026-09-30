@@ -94,7 +94,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class RepoListTab { NEW, UPDATE, ALL }
+private enum class RepoListTab { APK, TODAY, ALL }
 
 private fun tabLabel(name: String, count: Int): String =
     if (count > 0) "$name($count)" else name
@@ -102,8 +102,8 @@ private fun tabLabel(name: String, count: Int): String =
 private fun emptyMessageFor(tab: RepoListTab, hasAnyRepo: Boolean): String {
     if (!hasAnyRepo) return "감시할 저장소가 없습니다."
     return when (tab) {
-        RepoListTab.NEW -> "새로 설치할 저장소가 없습니다."
-        RepoListTab.UPDATE -> "업데이트할 저장소가 없습니다."
+        RepoListTab.APK -> "새로 설치하거나 업데이트할 저장소가 없습니다."
+        RepoListTab.TODAY -> "오늘 소스가 올라온 저장소가 없습니다."
         RepoListTab.ALL -> "감시할 저장소가 없습니다."
     }
 }
@@ -130,7 +130,7 @@ fun RepoListScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var showHiddenRepos by remember { mutableStateOf(false) }
     var wasLoading by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableStateOf(RepoListTab.NEW) }
+    var selectedTab by remember { mutableStateOf(RepoListTab.APK) }
     // asset id -> 진행 상황 (null 값 = 준비 중, 크기 미확인)
     val downloadProgress = remember { mutableStateMapOf<Long, DownloadProgress?>() }
 
@@ -221,15 +221,19 @@ fun RepoListScreen(
         }
     }
 
-    val newRepos = remember(uiState.repos) {
-        uiState.repos.filter { it.installStatus == InstallStatus.NOT_INSTALLED }
+    // 신규 설치 대상이거나 업데이트가 있는 저장소
+    val apkRepos = remember(uiState.repos) {
+        uiState.repos.filter {
+            it.installStatus == InstallStatus.NOT_INSTALLED || it.installStatus == InstallStatus.UPDATE_AVAILABLE
+        }
     }
-    val updateRepos = remember(uiState.repos) {
-        uiState.repos.filter { it.installStatus == InstallStatus.UPDATE_AVAILABLE }
+    // 오늘 소스가 올라온 저장소: 1순위(오늘 apk 빌드 없음) 다음에 2순위(오늘 apk 빌드 있음) 순으로 정렬
+    val todayRepos = remember(uiState.repos) {
+        uiState.repos.filter { it.pushedToday }.sortedBy { it.releaseToday }
     }
     val displayedRepos = when (selectedTab) {
-        RepoListTab.NEW -> newRepos
-        RepoListTab.UPDATE -> updateRepos
+        RepoListTab.APK -> apkRepos
+        RepoListTab.TODAY -> todayRepos
         RepoListTab.ALL -> uiState.repos
     }
 
@@ -300,14 +304,14 @@ fun RepoListScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Tab(
-                        selected = selectedTab == RepoListTab.NEW,
-                        onClick = { selectedTab = RepoListTab.NEW },
-                        text = { Text(tabLabel("NEW", newRepos.size)) }
+                        selected = selectedTab == RepoListTab.APK,
+                        onClick = { selectedTab = RepoListTab.APK },
+                        text = { Text(tabLabel("APK", apkRepos.size)) }
                     )
                     Tab(
-                        selected = selectedTab == RepoListTab.UPDATE,
-                        onClick = { selectedTab = RepoListTab.UPDATE },
-                        text = { Text(tabLabel("UPDATE", updateRepos.size)) }
+                        selected = selectedTab == RepoListTab.TODAY,
+                        onClick = { selectedTab = RepoListTab.TODAY },
+                        text = { Text(tabLabel("TODAY", todayRepos.size)) }
                     )
                     Tab(
                         selected = selectedTab == RepoListTab.ALL,
