@@ -484,7 +484,7 @@ private fun RepoCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (repoRelease.pushedToday) {
                     StatusChip(
-                        label = "오늘 업데이트",
+                        label = "작업필요",
                         icon = Icons.Filled.NewReleases,
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
