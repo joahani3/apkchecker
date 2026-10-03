@@ -471,12 +471,17 @@ private fun RepoCard(
         val apkAsset = repoRelease.release?.apkAsset
 
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = repoRelease.repo.fullName,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (repoRelease.pushedToday || repoRelease.installStatus == InstallStatus.NOT_INSTALLED ||
+                repoRelease.installStatus == InstallStatus.UPDATE_AVAILABLE
+            ) {
+                Spacer(modifier = Modifier.height(6.dp))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = repoRelease.repo.fullName,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
                 if (repoRelease.pushedToday) {
                     StatusChip(
                         label = "오늘 업데이트",
