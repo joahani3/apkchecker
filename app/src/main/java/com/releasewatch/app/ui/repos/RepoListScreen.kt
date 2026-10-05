@@ -13,6 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -74,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -306,27 +308,34 @@ fun RepoListScreen(
                     Tab(
                         selected = selectedTab == RepoListTab.APK,
                         onClick = { selectedTab = RepoListTab.APK },
-                        text = { Text(tabLabel("APK", apkRepos.size)) }
+                        text = {
+                            Text(tabLabel("APK", apkRepos.size), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     )
                     Tab(
                         selected = selectedTab == RepoListTab.TODAY,
                         onClick = { selectedTab = RepoListTab.TODAY },
-                        text = { Text(tabLabel("TODAY", todayRepos.size)) }
+                        text = {
+                            Text(tabLabel("TODAY", todayRepos.size), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     )
                     Tab(
                         selected = selectedTab == RepoListTab.ALL,
                         onClick = { selectedTab = RepoListTab.ALL },
-                        text = { Text("ALL") }
+                        text = { Text("ALL", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     )
                 }
-                TextButton(onClick = onOpenBookshelf) {
+                TextButton(
+                    onClick = onOpenBookshelf,
+                    contentPadding = PaddingValues(horizontal = 12.dp)
+                ) {
                     Icon(
                         Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
                         modifier = Modifier.width(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("책장")
+                    Text("책장", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
 
