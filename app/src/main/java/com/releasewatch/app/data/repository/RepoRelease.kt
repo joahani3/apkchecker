@@ -20,5 +20,8 @@ data class RepoRelease(
     val installedVersionName: String? = null,
     val playVersions: PlayTrackVersions? = null,
     val pushedToday: Boolean = false,
-    val releaseToday: Boolean = false
+    val releaseToday: Boolean = false,
+    // 오늘 push된 적이 있고, 그 push를 반영한 APK가 아직 빌드되지 않았거나(= 소스가 release보다 최신)
+    // 빌드됐어도 아직 설치되지 않은 경우. 즉 "오늘 소스가 바뀐 것에 대해 아직 할 일이 남은" 저장소.
+    val needsWork: Boolean = false
 )

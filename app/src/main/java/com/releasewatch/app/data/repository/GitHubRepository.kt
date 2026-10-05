@@ -110,7 +110,7 @@ class GitHubRepository(
                 }.awaitAll()
                 .filterNotNull()
                 .sortedWith(
-                    compareByDescending<RepoRelease> { it.pushedToday }
+                    compareByDescending<RepoRelease> { it.needsWork }
                         .thenBy { installPriority(it.installStatus) }
                         .thenByDescending { it.release?.publishedAt ?: "" }
                         .thenBy { it.repo.fullName.lowercase() }
@@ -139,15 +139,26 @@ class GitHubRepository(
         val playVersions = packageName?.let { playConsoleRepository.fetchTrackVersions(it) }
         val pushedToday = isToday(repo.pushedAt)
         val releaseToday = isToday(release?.publishedAt)
+        // 소스(push)가 release보다 최신이면 아직 그 변경을 담은 APK가 없다는 뜻.
+        val sourceAheadOfRelease = isAfter(repo.pushedAt, release?.publishedAt)
+        val needsWork = pushedToday && (sourceAheadOfRelease || installStatus != InstallStatus.UP_TO_DATE)
 
         return RepoRelease(
-            repo, release, sources, installStatus, installedVersionName, playVersions, pushedToday, releaseToday
+            repo, release, sources, installStatus, installedVersionName, playVersions,
+            pushedToday, releaseToday, needsWork
         )
     }
 
     private fun isToday(iso: String?): Boolean {
         val instant = iso?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return false
         return instant.atZone(ZoneId.systemDefault()).toLocalDate() == LocalDate.now()
+    }
+
+    // b가 없으면(= release/빌드가 아예 없음) a가 b보다 최신인 것으로 간주한다.
+    private fun isAfter(aIso: String?, bIso: String?): Boolean {
+        val a = aIso?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return false
+        val b = bIso?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        return b == null || a.isAfter(b)
     }
 
     private suspend fun resolveInstallStatus(

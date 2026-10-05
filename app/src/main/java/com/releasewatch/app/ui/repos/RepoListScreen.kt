@@ -105,7 +105,7 @@ private fun emptyMessageFor(tab: RepoListTab, hasAnyRepo: Boolean): String {
     if (!hasAnyRepo) return "감시할 저장소가 없습니다."
     return when (tab) {
         RepoListTab.APK -> "새로 설치하거나 업데이트할 저장소가 없습니다."
-        RepoListTab.TODAY -> "오늘 소스가 올라온 저장소가 없습니다."
+        RepoListTab.TODAY -> "오늘 작업이 필요한 저장소가 없습니다."
         RepoListTab.ALL -> "감시할 저장소가 없습니다."
     }
 }
@@ -229,9 +229,10 @@ fun RepoListScreen(
             it.installStatus == InstallStatus.NOT_INSTALLED || it.installStatus == InstallStatus.UPDATE_AVAILABLE
         }
     }
-    // 오늘 소스가 올라온 저장소: 1순위(오늘 apk 빌드 없음) 다음에 2순위(오늘 apk 빌드 있음) 순으로 정렬
+    // 오늘 소스가 바뀌어서 아직 할 일(빌드/설치)이 남은 저장소: 1순위(오늘 apk 빌드 없음) 다음에
+    // 2순위(오늘 apk 빌드는 있지만 아직 설치 전) 순으로 정렬. 이미 빌드+설치까지 끝났으면 제외.
     val todayRepos = remember(uiState.repos) {
-        uiState.repos.filter { it.pushedToday }.sortedBy { it.releaseToday }
+        uiState.repos.filter { it.needsWork }.sortedBy { it.releaseToday }
     }
     val displayedRepos = when (selectedTab) {
         RepoListTab.APK -> apkRepos
@@ -485,13 +486,13 @@ private fun RepoCard(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (repoRelease.pushedToday || repoRelease.installStatus == InstallStatus.NOT_INSTALLED ||
+            if (repoRelease.needsWork || repoRelease.installStatus == InstallStatus.NOT_INSTALLED ||
                 repoRelease.installStatus == InstallStatus.UPDATE_AVAILABLE
             ) {
                 Spacer(modifier = Modifier.height(6.dp))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (repoRelease.pushedToday) {
+                if (repoRelease.needsWork) {
                     StatusChip(
                         label = "작업필요",
                         icon = Icons.Filled.NewReleases,
@@ -536,6 +537,13 @@ private fun RepoCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                if (repoRelease.needsWork) {
+                    Text(
+                        text = "최근 소스 수정: ${formatDate(repoRelease.repo.pushedAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 repoRelease.playVersions?.closedTesting?.let { version ->
                     Text(
                         text = "Play 비공개 테스트: $version",
@@ -556,6 +564,13 @@ private fun RepoCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (repoRelease.needsWork) {
+                    Text(
+                        text = "최근 소스 수정: ${formatDate(repoRelease.repo.pushedAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
