@@ -60,3 +60,9 @@
 - 주요 변경 (What): RepoListTab을 NEW/UPDATE/ALL에서 APK/TODAY/ALL로 변경. APK 탭은 기존 NOT_INSTALLED+UPDATE_AVAILABLE을 합친 목록으로 동작. TODAY 탭은 repo.pushedToday인 저장소만 모아, 1순위(오늘 push했지만 releaseToday 없음) 다음에 2순위(오늘 push+오늘 release도 있음) 순으로 정렬. RepoRelease/GitHubRepository에 releaseToday(release.publishedAt이 오늘인지) 필드 추가. versionCode 22 / versionName 3.21로 bump
 - 연계 영향 및 개선 과제 (TODO): release-apk.yml push 트리거로 CI가 debug APK를 빌드해 GitHub Release를 생성하면, 릴리즈 제목을 'apk v3.21' 형식으로 수동 변경 필요(워크플로 파일 수정 권한 없음)
 
+- [2026-10-05] TODAY 탭에서 이미 빌드+설치까지 끝난 항목을 제외하고, 카드에 최근 소스 수정일시를 표시
+- 화면/기능 ID: SCR-02 / FN-02
+- 작업 목적 (Why): TODAY 탭은 '오늘 소스가 바뀌어서 아직 할 일이 남은' 저장소만 보여줘야 하는데, 기존엔 오늘 push만 있으면 이미 빌드/설치가 끝났어도 계속 노출되는 문제가 있었음
+- 주요 변경 (What): RepoRelease/GitHubRepository에 needsWork 필드 추가: 오늘 push됐고(pushedToday) 그 push를 반영한 release가 아직 없거나(source가 release보다 최신) 설치 상태가 UP_TO_DATE가 아닌 경우에만 true. TODAY 탭 필터와 카드의 '작업필요' 배지, 전체 목록 최상단 정렬 기준을 모두 pushedToday에서 needsWork로 교체. 카드에 '최근 소스 수정: <날짜시간>'(repo.pushedAt) 줄을 needsWork일 때 추가. versionCode 24 / versionName 3.23으로 bump
+- 연계 영향 및 개선 과제 (TODO): release-apk.yml push 트리거로 CI가 debug APK를 빌드해 GitHub Release를 생성하면, 릴리즈 제목을 'apk v3.23' 형식으로 수동 변경 필요(워크플로 파일 수정 권한 없음); 업로드되는 apk 파일명을 'apkchecker.apk'로 바꾸는 작업이 이어서 필요함
+
